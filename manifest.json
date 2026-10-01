@@ -1,0 +1,13 @@
+{
+    "display_name": "Phone & PC",
+    "loading_order": 100,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "howardsierra",
+    "version": "0.1.0",
+    "homePage": "https://github.com/howardsierra/SillyTavernPhone-And-PC",
+    "generate_interceptor": "stPhoneGenerateInterceptor",
+    "auto_update": true
+}
