@@ -102,6 +102,18 @@ document.addEventListener('stphone-ready', e => e.detail.registerImageProvider(/
 | Adult (18+) | Enable Rated (asks for confirmation), blur photos until tapped, reveal which character is behind an anonymous post |
 | Prompts | Edit every prompt: tag instructions, peek, locate, store search, restaurants, dating profiles, Rated feed and comments |
 
+## What generated content is based on
+
+Peeks, Locate, store searches, restaurants, dating profiles and Rated feeds adapt to where the chat is:
+
+| Chat | What the model is told to use |
+| --- | --- |
+| **No intro message** (empty chat, or the intro was cleared) | **Only the character card**: description, personality and scenario, included in the prompt. No opening scene, no alternate greetings, no invented history with `{{user}}`. |
+| **Intro message only** | The character card plus the intro message that's actually showing. Other greetings from the card are never used. |
+| **Ongoing chat** | The character card plus everything that's happened so far. |
+
+Custom prompts can place this anywhere with `{{context}}`. If they leave it out, it's added at the end.
+
 ## Notes
 
 - All phone data is stored in the chat's metadata, so every chat has its own phone.

@@ -1,5 +1,6 @@
 // Quiet-prompt generation (peeks, catalogs, feeds) with lenient JSON parsing.
 import { changed, ctx, isUser, nextId, promptText, saveState, settings, state, sub } from './core.js';
+import { storyContext } from './context.js';
 import { autoImages } from './images.js';
 import { updateInjection } from './inject.js';
 import { arr, norm, parseAgo, parseJson, sameName, str, toMoney, toNum } from './util.js';
@@ -29,7 +30,10 @@ export async function runJson(key, vars = {}, { busyKey = key, asCharacter = nul
     changed();
     const c = ctx();
     try {
-        const prompt = sub(promptText(key), vars);
+        // Card-only for chats without an intro, card + intro, or card + chat history.
+        const template = promptText(key);
+        const context = storyContext(asCharacter ?? vars.name ?? null);
+        const prompt = sub(template.includes('{{context}}') ? template : `${template}\n\n{{context}}`, { ...vars, context });
         let forceChId = null;
         if (c.groupId && asCharacter) {
             const idx = c.characters.findIndex(x => sameName(x.name, asCharacter));

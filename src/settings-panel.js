@@ -89,7 +89,7 @@ function html() {
             <h4>Prompts</h4>
             <select class="text_pole" id="stp-prompt-key">${Object.entries(PROMPT_LABELS).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('')}</select>
             <textarea class="text_pole textarea_compact" rows="10" id="stp-prompt-text"></textarea>
-            <small>Macros like {{user}} and {{char}} work. Peek prompts also get {{name}}; Cartly gets {{query}}.</small>
+            <small>Macros like {{user}} and {{char}} work. Peek prompts also get {{name}}; Cartly gets {{query}}. <code>{{context}}</code> is the story context: the character card only when the chat has no intro message, card + intro at the start of a chat, card + chat history later (added at the end if your prompt leaves it out).</small>
             <div class="menu_button menu_button_icon" id="stp-prompt-reset"><i class="fa-solid fa-rotate-left"></i> Restore default</div>
         </div>
     </div>
