@@ -23,8 +23,7 @@ export function pickPerson(list, includeYou = false) {
 }
 
 function handleOf(name, app) {
-    if (isUser(name)) return '';
-    return state().profiles[name]?.handles?.[app] ?? '';
+    return state().profiles[isUser(name) ? userName() : name]?.handles?.[app] ?? '';
 }
 
 /** Tapping a known person's name opens their profile. */
@@ -128,7 +127,7 @@ function profileView(app, list) {
     const meta = META[app];
     const name = pickPerson(list, true);
     const you = isUser(name);
-    const profile = state().profiles[name] ?? {};
+    const profile = state().profiles[you ? userName() : name] ?? {};
     const posts = liveItems()
         .filter(x => x.kind === 'post' && x.app === app && !x.stranger && (you ? isUser(x.from) : x.from === name))
         .sort((a, b) => (b.status === 'pending') - (a.status === 'pending') || b.time - a.time);
@@ -144,8 +143,10 @@ function profileView(app, list) {
             <div class="stp-profile-stats"><span><b>${posts.length}</b> posts</span>${you ? '' : `<span><b>${compact(Math.round(150 + (posts[0]?.likes ?? 40) * 9))}</b> followers</span>`}</div>
             ${peekNote(name, profile, app)}
         </div>` : '';
-    const none = you ? '' : busy ? shimmerCards(3) : empty(meta.icon, `Nothing from ${name ?? 'them'} yet`, `Tap <b>Peek</b> to load ${esc(name ?? 'their')}'s whole ${meta.label} feed.`);
-    const more = !you && posts.length ? moreButton('peek-more', busy, 'Load older posts', `data-app="${app}" data-name="${esc(name)}"`) : '';
+    const none = busy ? shimmerCards(3) : you
+        ? empty(meta.icon, 'No posts yet', `Write one above, or tap <b>Generate</b> to fill your profile with posts that fit ${esc(userName())}.`)
+        : empty(meta.icon, `Nothing from ${name ?? 'them'} yet`, `Tap <b>Peek</b> to load ${esc(name ?? 'their')}'s whole ${meta.label} feed.`);
+    const more = posts.length && (!you || posts.some(p => p.source === 'gen')) ? moreButton('peek-more', busy, 'Load older posts', `data-app="${app}" data-name="${esc(name)}"`) : '';
     return `${personChips(list, name, { includeYou: true })}
         <div class="stp-scroll stp-feed stp-feed-${app}" data-scroll="profile:${app}:${esc(name ?? '')}">
             ${card}

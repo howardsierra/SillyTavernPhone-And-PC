@@ -1,5 +1,5 @@
 // Reusable UI pieces. Everything returns HTML strings; all dynamic text is escaped.
-import { avatarUrl, isUser, money, settings, userName } from '../core.js';
+import { avatarUrl, isUser, money, settings, state, userName } from '../core.js';
 import { isBusy } from '../gen.js';
 import { imageAvailable, imageBusy } from '../images.js';
 import { ago, esc, gradientFor, initials, norm, sameName } from '../util.js';
@@ -65,21 +65,24 @@ export function sectionLabel(text, extra = '') {
 
 /** Peek button for one app on someone's phone ('life' = money, orders, location, dating). */
 export function peekButton(name, { label = false, app = 'life' } = {}) {
-    if (!name || isUser(name)) return '';
+    // {{user}} can generate their own posts, searches and music — not their money or orders.
+    if (!name || (isUser(name) && !['x', 'instagram', 'reddit', 'browser', 'music'].includes(app))) return '';
     const busy = isBusy(`peek:${app}:${norm(name)}`);
     const attrs = `data-act="peek" data-app="${esc(app)}" data-name="${esc(name)}" ${busy ? 'disabled' : ''}`;
     if (label) {
-        return `<button class="stp-btn stp-btn-soft stp-btn-sm ${busy ? 'stp-spin' : ''}" ${attrs}><i class="fa-solid fa-arrows-rotate"></i><span>${busy ? 'Peeking…' : 'Peek'}</span></button>`;
+        const word = isUser(name) ? (busy ? 'Generating…' : 'Generate') : (busy ? 'Peeking…' : 'Peek');
+        return `<button class="stp-btn stp-btn-soft stp-btn-sm ${busy ? 'stp-spin' : ''}" ${attrs}><i class="fa-solid ${isUser(name) ? 'fa-wand-magic-sparkles' : 'fa-arrows-rotate'}"></i><span>${word}</span></button>`;
     }
-    return `<button class="stp-icon-btn ${busy ? 'stp-spin' : ''}" title="Peek into ${esc(name)}'s phone" ${attrs}><i class="fa-solid fa-arrows-rotate"></i></button>`;
+    return `<button class="stp-icon-btn ${busy ? 'stp-spin' : ''}" title="${isUser(name) ? `Generate ${esc(userName())}'s` : `Peek into ${esc(name)}'s`} ${app === 'life' ? 'phone' : app}" ${attrs}><i class="fa-solid fa-arrows-rotate"></i></button>`;
 }
 
 export function peekNote(name, profile, app = 'life') {
-    if (isBusy(`peek:${app}:${norm(name)}`)) return `<div class="stp-peek-note stp-shimmer">Peeking at ${esc(name)}'s phone…</div>`;
+    if (isBusy(`peek:${app}:${norm(name)}`)) return `<div class="stp-peek-note stp-shimmer">${isUser(name) ? 'Generating…' : `Peeking at ${esc(name)}'s phone…`}</div>`;
+    if (isUser(name)) profile = state().profiles[userName()];
     const at = profile?.peeked?.[app] ?? (app === 'life' ? profile?.generatedAt : null);
     if (!at) return '';
     const when = ago(at);
-    return `<div class="stp-peek-note">Peeked ${when === 'now' ? 'just now' : `${esc(when)} ago`}</div>`;
+    return `<div class="stp-peek-note">${isUser(name) ? 'Generated' : 'Peeked'} ${when === 'now' ? 'just now' : `${esc(when)} ago`}</div>`;
 }
 
 /** A row of people to peek at (money, orders, location, dating). */

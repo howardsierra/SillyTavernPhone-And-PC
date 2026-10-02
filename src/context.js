@@ -2,7 +2,7 @@
 // - "fresh": the chat has no intro message → only the character card, nothing else
 // - "intro": only the intro message so far → the card plus that intro
 // - "story": an ongoing chat → the card plus the chat so far
-import { chatCharacters, ctx } from './core.js';
+import { chatCharacters, ctx, isUser, userName } from './core.js';
 import { sameName } from './util.js';
 
 const CARD_LIMIT = 2000;
@@ -46,7 +46,18 @@ export function cardFor(name) {
  * The context block added to every quiet generation.
  * @param {string|null} focus The character being peeked at, if any
  */
+/** {{user}}'s persona, for generating {{user}}'s own posts, searches and music. */
+function personaFor() {
+    const persona = clip(ctx().powerUserSettings?.persona_description ?? '', 1500);
+    return `[This is about ${userName()} — the user's own character, not one of the story's characters. Base it on ${userName()}'s persona${persona ? ' below' : ' (no persona description is set: infer who they are from how they act in the story)'} and on what ${userName()} has said and done in the story so far. Stay true to them and don't invent big new facts about their life.${persona ? `\n<${userName()}'s persona>\n${persona}\n</${userName()}'s persona>` : ''}]`;
+}
+
 export function storyContext(focus = null) {
+    const base = storyBase(focus);
+    return focus && isUser(focus) ? `${personaFor()}\n${base}` : base;
+}
+
+function storyBase(focus) {
     const stage = chatStage();
     if (stage === 'story') {
         return '[Story context: use the character card(s) and everything that has happened in the chat so far, especially the most recent events.]';
@@ -62,7 +73,7 @@ export function storyContext(focus = null) {
         if (!names.some(x => sameName(x, n))) names.push(n);
     }
     const cards = names.slice(0, 3).map(cardFor).filter(Boolean);
-    const npc = focus && !cardFor(focus)
+    const npc = focus && !isUser(focus) && !cardFor(focus)
         ? `\n${focus} has no character card: invent them so they fit the setting of the card(s) below.`
         : '';
     return `[Story context: this chat has no intro message — the story hasn't started yet. Base everything ONLY on the character card information below. Do not use, assume or invent any opening scene, greeting or shared history with {{user}} beyond what the card itself says.${npc}
