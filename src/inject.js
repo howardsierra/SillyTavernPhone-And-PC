@@ -32,15 +32,19 @@ export function updateInjection() {
     }
 
     if (s.injectTexts) {
-        const texts = items.filter(x => x.kind === 'sms').sort(byTime).slice(-Math.max(1, Number(s.maxTexts) || 15));
+        const texts = items.filter(x => x.kind === 'sms' && !x.spam).sort(byTime).slice(-Math.max(1, Number(s.maxTexts) || 15));
         if (texts.length) {
+            const theirReactions = new Map(items.filter(x => x.kind === 'react' && x.target).map(x => [x.target, x]));
             const lines = texts.map(t => {
                 let suffix = '';
                 if (t.dir === 'in') suffix = t.read ? ' (read)' : ' (unread)';
                 if (t.dir === 'out' && isJustSent(t)) suffix = ' (just sent)';
-                const to = t.dir === 'out' ? t.contact : user;
+                if (t.myReaction) suffix += ` (${user} reacted ${t.myReaction})`;
+                const react = theirReactions.get(t.id);
+                if (react) suffix += ` (${react.from} reacted ${react.emoji})`;
+                const to = t.group ? `group chat «${t.contact}»` : t.dir === 'out' ? t.contact : user;
                 const where = t.app === 'spark' ? ' [on the Spark dating app]' : '';
-                const body = [t.image ? `[sends a photo: ${t.image}]` : '', t.text].filter(Boolean).join(' ');
+                const body = [t.voice ? '[voice message]' : '', t.image ? `[sends a photo: ${t.image}]` : '', t.text].filter(Boolean).join(' ');
                 return `${t.from} → ${to}${where}: ${body}${suffix}`;
             });
             parts.push(`[${user}'s phone — text messages, oldest to newest]\n${lines.join('\n')}`);
@@ -122,6 +126,13 @@ export function updateInjection() {
         }
         for (const p of ratedGen) lines.push(`${user} anonymously rated a Rated post ${p.myRating}/10 — the post is secretly ${p.secretlyBy}'s (${user} may not know that).`);
         if (lines.length) parts.push(`[Rated (anonymous 18+ rating app) — only the poster knows a post is theirs]\n${lines.join('\n')}`);
+    }
+
+    // Calendar: plans {{user}} shares with people, and plans characters made.
+    const plans = items.filter(x => x.kind === 'plan' && !x.done && (!isUser(x.from) || x.with?.length)).sort(byTime).slice(-6);
+    if (plans.length) {
+        const lines = plans.map(p => `${p.when ? `${p.when}: ` : ''}${p.text}${p.with?.length ? ` (with ${p.with.join(', ')})` : ''} — planned by ${isUser(p.from) ? user : p.from}`);
+        parts.push(`[Upcoming plans]\n${lines.join('\n')}`);
     }
 
     if (s.injectSearches) {

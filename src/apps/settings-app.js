@@ -4,7 +4,7 @@ import { updateInjection } from '../inject.js';
 import { header, input, sectionLabel } from '../ui/kit.js';
 import { modeCard } from './messages.js';
 import { draft, navigate, ui } from '../ui/state.js';
-import { WALLPAPERS, wallpaperCss } from '../ui/theme.js';
+import { SKINS, WALLPAPERS, wallpaperCss } from '../ui/theme.js';
 import { esc, toMoney } from '../util.js';
 
 function toggleRow(key, label, sub = '') {
@@ -30,6 +30,10 @@ export default {
         const provider = imageProviders().find(p => p.id === s.imageProvider)?.label ?? s.imageProvider;
         return `${header('Settings', { large: true })}
             <div class="stp-scroll" data-scroll="settings">
+                ${sectionLabel('Skin')}
+                <div class="stp-skins">${SKINS.map(k => `<button class="stp-skin ${(s.skin || 'classic') === k.id ? 'stp-active' : ''}" data-act="set-value" data-key="skin" data-value="${k.id}">
+                    <span class="stp-skin-dots">${k.colors.map(c => `<i style="background:${c}"></i>`).join('')}</span><span>${esc(k.label)}</span>
+                </button>`).join('')}</div>
                 ${sectionLabel('Appearance')}
                 <div class="stp-card">
                     <div class="stp-seg-row">${choice('mode', 'phone', '<i class="fa-solid fa-mobile-screen"></i> Phone')}${choice('mode', 'pc', '<i class="fa-solid fa-desktop"></i> PC')}</div>
@@ -54,6 +58,8 @@ export default {
                     ${s.adultApps ? toggleRow('blurAdult', 'Blur 18+ photos', 'Tap a photo to reveal it') : ''}
                     ${s.adultApps ? toggleRow('revealAnon', 'Reveal anonymous posters', 'Show which story character is behind a Rated post') : ''}
                     ${toggleRow('notify', 'Notifications', 'Pop-ups outside the phone')}
+                    ${toggleRow('lockScreen', 'Lock screen', 'Show new notifications on a lock screen when you open the phone')}
+                    ${toggleRow('spamTexts', 'Spam & scam texts', 'Now and then a sketchy text arrives from an unknown number')}
                 </div>
                 ${sectionLabel('This chat')}
                 <div class="stp-card stp-list-card">${modeCard()}</div>

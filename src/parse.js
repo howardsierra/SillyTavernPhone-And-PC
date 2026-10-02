@@ -1,9 +1,9 @@
 // Pulls phone tags out of chat messages, stores them and rewrites the message.
-import { ctx, isUser, makeAnchor, money, nextId, saveState, settings, state, userName } from './core.js';
+import { ctx, ensureGroup, isUser, liveItems, makeAnchor, money, nextId, saveState, settings, state, userName } from './core.js';
 import { wrapPlainReply } from './turn.js';
-import { hashString, norm, str, toMoney } from './util.js';
+import { hashString, norm, sameName, str, toMoney } from './util.js';
 
-const TAGS = 'sms|text|call|post|anon|search|pay|request|order|location';
+const TAGS = 'sms|text|call|post|anon|search|pay|request|order|location|react|plan|silent';
 const TAG_RE = new RegExp(`<(${TAGS})\\b([^>]*?)(?:\\/>|>([\\s\\S]*?)<\\/\\1\\s*>)`, 'gi');
 
 export const APP_NAMES = { x: 'X', instagram: 'Instagram', reddit: 'Reddit', rated: 'Rated' };
@@ -40,17 +40,25 @@ function oneLine(text) {
     return String(text).replace(/\s*\n+\s*/g, ' / ');
 }
 
+// Messages that are phone traffic (and phone-only roleplay) keep the full text in the
+// chat, because the chat is the phone's memory.
+let forceFull = false;
+
+function mode() {
+    return forceFull || state().phoneOnly ? 'full' : settings().chatMarker;
+}
+
 function marker(kind, d) {
-    // Phone-only roleplay reads like a transcript, so it always shows the full text.
-    const mode = state().phoneOnly ? 'full' : settings().chatMarker;
-    if (mode === 'none') return '';
+    const style = mode();
+    if (style === 'none') return '';
     const user = userName();
-    const full = mode === 'full';
+    const full = style === 'full';
     switch (kind) {
         case 'sms': {
-            const target = d.dir === 'out' ? d.contact : user;
+            const target = d.group ? `«${d.contact}» (group)` : d.dir === 'out' ? d.contact : user;
             const photo = d.image ? `[photo: ${d.image}] ` : '';
-            if (full) return `📱 **${d.from} → ${target}:** ${photo}${oneLine(d.body)}`.trim();
+            const voice = d.voice ? '[voice message] ' : '';
+            if (full) return `📱 **${d.from} → ${target}:** ${voice}${photo}${oneLine(d.body)}`.trim();
             if (d.app === 'spark') return `*📱 ${d.from} messaged ${target} on Spark.*`;
             return d.image ? `*📱 ${d.from} sent ${target} a photo.*` : `*📱 ${d.from} texted ${target}.*`;
         }
@@ -82,6 +90,7 @@ export function processMessage(mesId) {
     if (!m || m.is_system || typeof m.mes !== 'string') return [];
     wrapPlainReply(m, mesId);
     if (!hasTags(m.mes)) return [];
+    forceFull = !!m.extra?.stp_phone;
 
     const user = userName();
     const speaker = m.is_user ? user : (m.name || c.name2);
@@ -100,15 +109,38 @@ export function processMessage(mesId) {
             case 'text': {
                 if (!body && !image) return '';
                 const fromUser = isUser(from);
-                const contact = fromUser ? (a.to || c.name2) : from;
+                const groupName = a.chat || a.group || '';
+                if (groupName) ensureGroup(groupName, [fromUser ? '' : from]);
+                const contact = groupName || (fromUser ? (a.to || c.name2) : from);
                 const dir = fromUser ? 'out' : 'in';
                 const app = ['spark', 'dating'].includes(norm(a.app)) ? 'spark' : 'messages';
-                const lines = body.split(/\n+/).map(x => x.trim()).filter(Boolean);
-                const base = { kind: 'sms', app, from: fromUser ? user : from, contact, dir, read: fromUser };
-                if (image) found.push({ ...base, text: lines.shift() ?? '', image });
-                for (const line of lines) found.push({ ...base, text: line });
-                return marker('sms', { from: base.from, contact, body, dir, image, app });
+                const voice = ['true', 'yes', '1', 'voice'].includes(norm(a.voice || a.type));
+                const base = { kind: 'sms', app, from: fromUser ? user : from, contact, dir, read: fromUser, ...(groupName ? { group: true } : {}) };
+                if (voice) {
+                    // A voice message is one bubble; its text is the transcript.
+                    found.push({ ...base, text: body.replace(/\s*\n+\s*/g, ' '), voice: true });
+                } else {
+                    const lines = body.split(/\n+/).map(x => x.trim()).filter(Boolean);
+                    if (image) found.push({ ...base, text: lines.shift() ?? '', image });
+                    for (const line of lines) found.push({ ...base, text: line });
+                }
+                return marker('sms', { from: base.from, contact, body, dir, image, app, voice, group: !!groupName });
             }
+            case 'react': {
+                const emoji = a.emoji || a.reaction || body;
+                if (!emoji) return '';
+                found.push({ kind: 'react', from, emoji: String(emoji).slice(0, 4), contact: a.chat || from });
+                return '';
+            }
+            case 'plan': {
+                const title = a.title || body;
+                if (!title) return '';
+                const withList = String(a.with || '').split(',').map(x => x.trim()).filter(Boolean).map(x => (isUser(x) ? user : x));
+                found.push({ kind: 'plan', from, text: title, when: a.when || a.time || '', with: withList });
+                return mode() === 'none' ? '' : `*📅 ${from} planned: ${title}${a.when ? ` (${a.when})` : ''}.*`;
+            }
+            case 'silent':
+                return '';
             case 'call': {
                 const fromUser = isUser(from);
                 const contact = fromUser ? (a.to || c.name2) : from;
@@ -194,6 +226,13 @@ export function processMessage(mesId) {
         sentAtLen: mesId + 1,
         ...f,
     }));
+    // Reactions land on {{user}}'s latest text to that person.
+    for (const r of added.filter(x => x.kind === 'react')) {
+        const target = liveItems()
+            .filter(x => x.kind === 'sms' && x.dir === 'out' && sameName(x.contact, r.contact) && x.status === 'sent')
+            .sort((x, y) => y.time - x.time)[0];
+        if (target) r.target = target.id;
+    }
     st.items.push(...added);
 
     try {

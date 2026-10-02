@@ -8,6 +8,11 @@ export const PROMPT_LABELS = {
     instructions: 'Tag instructions (injected into every prompt)',
     instructionsAdult: 'Extra tag instructions for 18+ apps',
     phoneOnly: 'Phone-only roleplay instructions',
+    reply: 'Reply to a text (instant delivery)',
+    replyGroup: 'Reply in a group text',
+    news: 'News: headlines',
+    live: 'Live: who is streaming',
+    liveChat: 'Live: a stream\'s chat',
     peekSocial: 'Peek: a character\'s X / Instagram / Reddit profile feed',
     feed: 'Feed: {{user}}\'s home timeline on X / Instagram / Reddit',
     peekBrowser: 'Peek: a character\'s search & browsing history',
@@ -23,18 +28,30 @@ export const PROMPT_LABELS = {
 
 export const DEFAULT_PROMPTS = {
     instructions: `[Phone system: {{user}} has a smartphone. When it fits the story (e.g. characters are apart), characters can use their phones by writing these tags anywhere in a reply. The tags are hidden from the story text and shown on {{user}}'s phone.
-- Text {{user}}: <sms from="Name">message</sms> (each line = one bubble). Send a picture by adding image="what the photo shows".
+- Text {{user}}: <sms from="Name">message</sms> (each line = one bubble). Send a picture by adding image="what the photo shows"; a voice message with voice="true"; in a group chat add chat="Group name".
+- React to {{user}}'s latest text: <react from="Name" emoji="❤️"/>
 - Call {{user}}: <call from="Name" status="missed">optional voicemail</call> (status: missed, answered or declined).
 - Post online: <post app="x|instagram|reddit" from="Name">text</post> (Reddit: title="..." sub="r/..."; Instagram/X photo: image="...").
 - Search the web privately: <search from="Name">query</search>
 - Money (Pocket app): <pay from="Name" to="Name" amount="20" note="🍕 pizza"/> or <request from="Name" to="{{user}}" amount="20" note="..."/>
 - Order online: <order app="shop|food" from="Name" for="Recipient" item="..." price="24.99" store="...">gift note</order>
 - Share location: <location from="Name" place="...">what they're doing</location>
+- Make a plan: <plan from="Name" when="Saturday 8pm" with="{{user}}">what</plan>
 Characters only know about texts, payments and orders {{user}} has actually sent (see the phone log). Never write phone actions on {{user}}'s behalf.]`,
 
     instructionsAdult: `[18+ app "Rated": an anonymous app where adults post photos of themselves to be rated 1-10 by strangers. A character can secretly post with <anon from="Name" image="what the photo shows">caption</anon>. Posts are anonymous; nobody knows who posted unless the character tells them. All users are consenting adults (18+).]`,
 
     phoneOnly: `[Phone-only roleplay: right now the whole roleplay happens through {{user}}'s phone — {{user}} is not physically with anyone. Reply ONLY with phone actions written as tags, mostly texts: <sms from="Name">message</sms>. Write texts the way the character really texts: short, casual, several bubbles (one per line), emoji or slang if it fits them, and react to exactly what {{user}} just sent. The person {{user}} just texted or called is the one who answers, even if it isn't {{char}}. Other phone tags (call, post, pay, request, order, location, search) are welcome when they fit. Do not write any narration, actions or spoken dialogue outside the tags.]`,
+
+    reply: `[OOC: Pause the story for a moment. {{user}} just did this on their phone:
+{{what}}
+
+Write {{contact}}'s response exactly as it would arrive on {{user}}'s phone, in character and consistent with everything that has happened. Use ONLY phone tags — usually one or more <sms from="{{contact}}">…</sms>: short, natural texting, one bubble per line, in {{contact}}'s own texting style. Add image="what the photo shows" to send a picture, or voice="true" for a voice message. {{contact}} may also call, pay, react to a text with <react from="{{contact}}" emoji="❤️"/>, or use any other phone tag. If {{contact}} wouldn't answer right now (busy, asleep, upset, ignoring {{user}}), write only <silent/>. Write nothing outside the tags.]`,
+
+    replyGroup: `[OOC: Pause the story for a moment. The group chat «{{contact}}» (members: {{members}}) just got this from {{user}}:
+{{what}}
+
+Write how the group responds, like a real group chat: one or more members text back with <sms chat="{{contact}}" from="Member name">…</sms> — in character, in their own texting styles, several members may reply and react to each other. If nobody would answer right now, write only <silent/>. Write nothing outside the tags.]`,
 
     peekSocial: `[OOC: Pause the roleplay. Show {{name}}'s {{appName}} profile as it looks right now: their handle, bio and their {{count}} most recent posts, as a real, lived-in profile feed — varied topics, moods and posting times, everyday life mixed with things tied to the story. It must fit {{name}}'s personality, interests and secrets, and the story context below (including how they feel about {{user}}, if they know them). ${STYLE} ${WORLD}
 {{more}}
@@ -85,6 +102,33 @@ ${JSON_ONLY}
   "dating": {"onApp": false, "bio": "...", "prompts": [{"q": "...", "a": "..."}], "photo": "profile photo description", "lookingFor": "..."}
 }
 Include 6-10 payments (Venmo-style, between {{name}} and friends, never involving {{user}}) and 4-6 orders, newest first. Set dating.onApp to true only if {{name}} would plausibly have a dating profile right now. "ago" uses short forms like 5m, 3h, 2d.]`,
+
+    news: `[OOC: Pause the roleplay. Write the news feed {{user}} sees on their phone right now: 8 articles from the world of the story — local news, world events, gossip, entertainment, weather, sports or the in-world equivalent. Where it fits, include stories touching on recent story events or people (rumours, sightings, consequences), but keep most of it everyday news that makes the world feel alive. ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"articles": [{"headline": "...", "source": "outlet name", "category": "Local", "summary": "2-3 sentence summary", "body": "two short paragraphs", "image": "what the article photo shows", "ago": "2h"}]}]`,
+
+    live: `[OOC: Pause the roleplay. Who is live streaming right now? Invent 6 live streams {{user}} could watch: gaming, just chatting, music, cooking, IRL, art — or the in-world equivalent. If it fits their personality and the story context, one or two may be streamed by people from the story (use their exact names): {{people}}. ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"streams": [{"streamer": "name", "title": "stream title", "category": "Just Chatting", "viewers": 1240, "scene": "what's on screen right now"}]}]`,
+
+    liveChat: `[OOC: Pause the roleplay. {{streamer}} is live streaming "{{title}}" ({{category}}). Recent chat:
+{{recent}}
+
+{{user}} wrote in chat: {{userMsgs}}
+
+Continue the stream: what {{streamer}} says out loud next (1-3 short lines, in character — they may read and react to chat, especially {{user}}'s messages and donations), and 10-14 new chat messages from viewers (usernames, emotes, jokes, questions, simps, trolls). ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"streamer": ["line", "line"], "chat": [{"user": "username", "text": "..."}], "viewers": 1300}]`,
 
     locate: `[OOC: Pause the roleplay. Where is {{name}} right now and what are they doing, consistent with the story context below? ${WORLD}
 {{context}}

@@ -14,10 +14,13 @@ export const ui = {
     lastViewKey: '',
     revealed: {},
     typing: null,
+    locked: false,
+    homePage: 0,
 };
 
 export function navigate(app, view = null, params = {}) {
     ui.open = true;
+    ui.locked = false;
     ui.app = app;
     ui.view = view;
     ui.params = params;

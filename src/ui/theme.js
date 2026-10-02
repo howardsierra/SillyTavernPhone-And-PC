@@ -14,3 +14,13 @@ export function wallpaperCss(s) {
     }
     return WALLPAPERS[s.wallpaper] ?? WALLPAPERS.aurora;
 }
+
+export const SKINS = [
+    { id: 'classic', label: 'Classic', colors: ['#0a84ff', '#30d158', '#1c1c1e'] },
+    { id: 'neon', label: 'Neon City', colors: ['#ff2d78', '#00e5ff', '#8d42ff'] },
+    { id: 'noir', label: 'Noir d\'Or', colors: ['#f0d49a', '#d9ab5e', '#16130e'] },
+    { id: 'porcelain', label: 'Porcelain', colors: ['#5a92ff', '#e8ecf5', '#ffffff'] },
+    { id: 'pastel', label: 'Pastel', colors: ['#ff9ec7', '#b79bff', '#8dcfff'] },
+    { id: 'amoled', label: 'AMOLED', colors: ['#00e88f', '#151515', '#000000'] },
+    { id: 'lcd', label: 'Retro LCD', colors: ['#242e12', '#869c40', '#a7bd5e'] },
+];

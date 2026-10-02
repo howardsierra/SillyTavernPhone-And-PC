@@ -10,8 +10,9 @@ import { processMessage, scanChat } from './parse.js';
 import { createSettingsPanel, syncSettingsUi } from './settings-panel.js';
 import { applyDevicePosition, close, createDom, open, toggle } from './ui/shell.js';
 import { navigate, resetUi, ui } from './ui/state.js';
-import { currentContact, isPhoneOnly, setPhoneOnly } from './turn.js';
-import { norm, sameName } from './util.js';
+import { applyChatHiding, currentContact, isPhoneOnly, setPhoneOnly } from './turn.js';
+import { maybeSpam } from './apps/extras.js';
+import { debounce, norm, sameName } from './util.js';
 
 function onChatChanged() {
     resetUi();
@@ -67,14 +68,23 @@ globalThis.stPhoneGenerateInterceptor = async function (_chat, _contextSize, _ab
     }
 };
 
+/** Phone traffic stays in the chat as context but is hidden from view (optional). */
+function watchChat() {
+    const hide = debounce(applyChatHiding, 50);
+    const chat = document.getElementById('chat');
+    if (chat) new MutationObserver(hide).observe(chat, { childList: true });
+    hide();
+}
+
 function registerEvents() {
     const c = ctx();
     const ev = c.eventTypes ?? c.event_types;
     const on = (name, fn) => name && c.eventSource.on(name, fn);
     on(ev.CHAT_CHANGED, onChatChanged);
-    on(ev.MESSAGE_RECEIVED, id => {
+    on(ev.MESSAGE_RECEIVED, (id, type) => {
         ui.typing = null;
         onMessage(id);
+        if (type !== 'extension' && type !== 'first_message') maybeSpam();
     });
     on(ev.GENERATION_ENDED, stopTyping);
     on(ev.GENERATION_STOPPED, stopTyping);
@@ -129,7 +139,7 @@ function registerSlashCommand() {
 
 function exposeApi() {
     const api = {
-        version: '0.3.0',
+        version: '0.4.0',
         registerImageProvider: (id, label, fn) => {
             registerImageProvider(id, label, fn);
             syncSettingsUi();
@@ -155,6 +165,7 @@ export function init() {
     createDom();
     createSettingsPanel();
     registerEvents();
+    watchChat();
     registerSlashCommand();
     exposeApi();
     onChatChanged();

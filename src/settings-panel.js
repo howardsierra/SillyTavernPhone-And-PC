@@ -1,12 +1,15 @@
 // The "Phone & PC" drawer in SillyTavern's Extensions panel.
 import { changed, ctx, saveSettings, settings } from './core.js';
 import { imageProviders } from './images.js';
+import { phoneProfiles } from './llm.js';
+import { SKINS } from './ui/theme.js';
 import { updateInjection } from './inject.js';
 import { DEFAULT_PROMPTS, PROMPT_LABELS } from './prompts-default.js';
+import { applyChatHiding } from './turn.js';
 import { applyDevicePosition, open, resetPositions } from './ui/shell.js';
 import { esc } from './util.js';
 
-const NUMERIC = new Set(['maxTexts', 'maxPosts', 'depth', 'role', 'peekTokens', 'startingBalance']);
+const NUMERIC = new Set(['maxTexts', 'maxPosts', 'depth', 'role', 'peekTokens', 'startingBalance', 'replyTokens', 'phoneHistory']);
 
 function check(key, label, title = '') {
     return `<label class="checkbox_label" ${title ? `title="${esc(title)}"` : ''}><input type="checkbox" data-setting="${key}"> ${label}</label>`;
@@ -39,6 +42,20 @@ function html() {
                     <option value="full">Full (shows the text in chat)</option>
                     <option value="none">None (phone only)</option>
                 </select>`, 'What stays in the chat message where a phone tag was removed')}
+
+            ${check('lockScreen', 'Lock screen with notifications when opening the phone')}
+            ${check('spamTexts', 'Spam & scam texts now and then')}
+            ${row('Skin', `<select class="text_pole" data-setting="skin">${SKINS.map(k => `<option value="${k.id}">${esc(k.label)}</option>`).join('')}</select>`)}
+
+            <h4>Texting</h4>
+            ${row('When you text from the phone', `<select class="text_pole" data-setting="textDelivery">
+                    <option value="instant">Reply right away (saved in the chat as context)</option>
+                    <option value="next">Wait for my next chat message</option>
+                </select>`)}
+            ${check('hidePhoneInChat', 'Hide phone messages in the chat view (they stay in the chat as context)')}
+            ${row('Reply length (tokens)', '<input class="text_pole" type="number" min="100" max="4000" step="50" data-setting="replyTokens">')}
+            ${row('Connection for the phone', '<select class="text_pole" data-setting="phoneProfile" id="stp-phone-profile"></select>', 'Use a different (e.g. faster or cheaper) model for texts, peeks and feeds. Needs the Connection Manager extension.')}
+            ${row('Chat history for that connection', '<input class="text_pole" type="number" min="1" max="200" data-setting="phoneHistory">', 'How many recent chat messages the phone connection sees')}
 
             <h4>Prompt injection</h4>
             ${check('injectInstructions', 'Tell the model how to use the phone (tags)')}
@@ -106,6 +123,11 @@ export function syncSettingsUi() {
         if (el.type === 'checkbox') el.checked = !!s[key];
         else if (document.activeElement !== el) el.value = String(s[key] ?? '');
     });
+    const profileSelect = document.getElementById('stp-phone-profile');
+    if (profileSelect && document.activeElement !== profileSelect) {
+        profileSelect.innerHTML = `<option value="">Same as the chat</option>${phoneProfiles().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}`;
+        profileSelect.value = s.phoneProfile || '';
+    }
     const provider = s.imageProvider;
     root.querySelectorAll('[data-provider]').forEach(el => {
         el.style.display = el.dataset.provider === provider ? '' : 'none';
@@ -151,6 +173,7 @@ export function createSettingsPanel() {
         else s[key] = el.value;
         saveSettings();
         if (key === 'mode') applyDevicePosition();
+        if (key === 'hidePhoneInChat') applyChatHiding();
         syncSettingsUi();
         updateInjection();
         changed();

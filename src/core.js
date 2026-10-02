@@ -16,6 +16,14 @@ export const defaultSettings = {
     wallpaper: 'aurora',
     customWallpaper: '',
     notify: true,
+    textDelivery: 'instant',
+    hidePhoneInChat: true,
+    replyTokens: 600,
+    phoneProfile: '',
+    phoneHistory: 30,
+    lockScreen: true,
+    skin: 'classic',
+    spamTexts: true,
     focusPhoneOnly: true,
     chatMarker: 'short',
     injectInstructions: true,
@@ -108,6 +116,10 @@ export function state() {
     st.profiles ??= {};
     st.contacts ??= [];
     st.notes ??= [];
+    st.groups ??= [];
+    st.plans ??= [];
+    st.news ??= { articles: [] };
+    st.live ??= { streams: [] };
     st.seq ??= 0;
     st.batch ??= 0;
     st.wallet ??= {};
@@ -133,6 +145,25 @@ export function saveState() {
 export function nextId(st = state()) {
     st.seq += 1;
     return `${Date.now().toString(36)}-${st.seq}`;
+}
+
+/** A group text conversation by name (case-insensitive). */
+export function findGroup(name) {
+    return state().groups.find(g => sameName(g.name, name)) ?? null;
+}
+
+/** Makes sure a group exists and includes these members. */
+export function ensureGroup(name, members = []) {
+    const st = state();
+    let g = findGroup(name);
+    if (!g) {
+        g = { name, members: [] };
+        st.groups.push(g);
+    }
+    for (const m of members) {
+        if (m && !isUser(m) && !g.members.some(x => sameName(x, m))) g.members.push(m);
+    }
+    return g;
 }
 
 // ---------------------------------------------------------------------------

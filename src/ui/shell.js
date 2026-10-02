@@ -6,8 +6,8 @@ import { orderStepLabel, requestStatus } from '../derived.js';
 import { peek, peekApp } from '../gen.js';
 import { generateImage, retakeImage } from '../images.js';
 import { updateInjection } from '../inject.js';
-import { currentContact, isPhoneOnly, sendTurn, setPhoneOnly } from '../turn.js';
-import { esc, norm } from '../util.js';
+import { currentContact, isInstant, isPhoneOnly, sendTurn, setPhoneOnly } from '../turn.js';
+import { ago, esc, norm } from '../util.js';
 import { empty, header } from './kit.js';
 import { navigate, ui } from './state.js';
 import { wallpaperCss } from './theme.js';
@@ -79,13 +79,21 @@ function homeView() {
     const dock = DOCK.map(id => apps.find(a => a.id === id)).filter(Boolean);
     const grid = apps.filter(a => !DOCK.includes(a.id));
     const d = new Date();
+    // Page 1: clock, widgets and the first apps; later pages hold the rest. Swipe between them.
+    const perPage = [12, 20];
+    const pages = [grid.slice(0, perPage[0])];
+    for (let i = perPage[0]; i < grid.length; i += perPage[1]) pages.push(grid.slice(i, i + perPage[1]));
+    const page = Math.min(ui.homePage ?? 0, pages.length - 1);
     return `<div class="stp-home">
-        <div class="stp-home-clock">
-            <div class="stp-home-date">${esc(d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }))}</div>
-            <div class="stp-home-time">${esc(d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s?[AP]M$/i, ''))}</div>
-        </div>
-        ${widgets()}
-        <div class="stp-home-grid">${grid.map(a => appIcon(a)).join('')}</div>
+        <div class="stp-home-pages" data-page="${page}">${pages.map((list, i) => `<div class="stp-home-page">
+            ${i === 0 ? `<div class="stp-home-clock">
+                <div class="stp-home-date">${esc(d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }))}</div>
+                <div class="stp-home-time">${esc(d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s?[AP]M$/i, ''))}</div>
+            </div>
+            ${widgets()}` : '<div class="stp-home-page-pad"></div>'}
+            <div class="stp-home-grid">${list.map(a => appIcon(a)).join('')}</div>
+        </div>`).join('')}</div>
+        ${pages.length > 1 ? `<div class="stp-page-dots">${pages.map((_, i) => `<button class="${i === page ? 'stp-active' : ''}" data-act="home-page" data-page="${i}" aria-label="Page ${i + 1}"></button>`).join('')}</div>` : ''}
         <div class="stp-dock">${dock.map(a => appIcon(a, { label: false })).join('')}</div>
     </div>`;
 }
@@ -111,9 +119,9 @@ function bannerHtml() {
     </button>`;
 }
 
-/** Phone-only: things queued outside a conversation (payments, orders…) go out from here. */
+/** Instant delivery: things queued outside a conversation (payments, orders…) go out from here. */
 function outboxBar() {
-    if (!hasChat() || !isPhoneOnly() || ui.view === 'thread') return '';
+    if (!hasChat() || !isInstant() || ui.view === 'thread' || ui.locked) return '';
     const n = pendingItems().length;
     if (!n) return '';
     return `<button class="stp-outbox-bar" data-act="send-turn"><i class="fa-solid fa-paper-plane"></i><span>Send ${n} queued ${n === 1 ? 'action' : 'actions'}</span></button>`;
@@ -133,8 +141,53 @@ function viewerHtml() {
     </div>`;
 }
 
+/** Notifications shown on the lock screen. */
+function lockNotes() {
+    const items = liveItems();
+    const notes = [];
+    const texts = new Map();
+    for (const it of items.filter(x => x.kind === 'sms' && x.dir === 'in' && !x.read).sort((a, b) => b.time - a.time)) {
+        const key = `${it.app ?? 'messages'}:${norm(it.contact)}`;
+        if (!texts.has(key)) texts.set(key, { it, count: 0 });
+        texts.get(key).count++;
+    }
+    for (const { it, count } of texts.values()) {
+        const app = it.app === 'spark' ? 'spark' : 'messages';
+        notes.push({ app, view: 'thread', contact: it.contact, title: it.group ? `${it.contact}` : it.contact, text: `${it.group ? `${it.from}: ` : ''}${it.voice ? '🎤 Voice message' : it.image && !it.text ? '📷 Photo' : it.text}${count > 1 ? `  +${count - 1} more` : ''}`, time: it.time });
+    }
+    for (const it of items.filter(x => x.kind === 'call' && x.dir === 'in' && !x.read)) {
+        notes.push({ app: 'phone', title: it.contact, text: `Missed call${it.text ? ' · voicemail' : ''}`, time: it.time });
+    }
+    for (const it of items.filter(x => x.kind === 'pay' && x.payType === 'request' && x.to === userName() && x.status === 'sent' && requestStatus(x, items) === 'open')) {
+        notes.push({ app: 'pay', title: it.from, text: `Requested ${money(it.amount)}${it.note ? ` · ${it.note}` : ''}`, time: it.time });
+    }
+    return notes.sort((a, b) => b.time - a.time).slice(0, 6);
+}
+
+function lockView() {
+    const d = new Date();
+    const notes = lockNotes();
+    return `<div class="stp-lock">
+        <div class="stp-lock-icon"><i class="fa-solid fa-lock"></i></div>
+        <div class="stp-home-clock">
+            <div class="stp-home-date">${esc(d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }))}</div>
+            <div class="stp-home-time">${esc(d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s?[AP]M$/i, ''))}</div>
+        </div>
+        <div class="stp-lock-notes">${notes.map(n => {
+            const app = appById(n.app);
+            return `<button class="stp-lock-note" data-act="lock-open" data-app="${esc(n.app)}" data-view="${esc(n.view ?? '')}" data-contact="${esc(n.contact ?? '')}">
+                <span class="stp-banner-icon" style="--glyph:${app?.color ?? '#555'}"><i class="${app?.icon ?? 'fa-solid fa-bell'}"></i></span>
+                <span class="stp-banner-main"><b>${esc(n.title)}</b><span>${esc(n.text)}</span></span>
+                <span class="stp-banner-time">${esc(ago(n.time))}</span>
+            </button>`;
+        }).join('')}</div>
+        <button class="stp-lock-unlock" data-act="unlock"><span>Tap to unlock</span><i></i></button>
+    </div>`;
+}
+
 function currentView() {
     if (!hasChat()) return `${header('Phone', { back: false })}${empty('fa-solid fa-mobile-screen', 'No chat open', 'Open a chat to use the phone.')}`;
+    if (ui.locked) return lockView();
     if (ui.app === 'home') return null;
     const app = appById(ui.app);
     if (!app) {
@@ -172,7 +225,10 @@ export function render() {
     device.classList.toggle('stp-mode-pc', s.mode === 'pc');
     device.classList.toggle('stp-mode-phone', s.mode !== 'pc');
     device.classList.toggle('stp-theme-light', theme === 'light');
-    device.style.setProperty('--stp-wallpaper', wallpaperCss(s));
+    for (const cls of [...device.classList]) if (cls.startsWith('stp-skin-')) device.classList.remove(cls);
+    device.classList.add(`stp-skin-${s.skin || 'classic'}`);
+    // A custom wallpaper beats a skin's built-in one.
+    device.style.setProperty('--stp-wallpaper', wallpaperCss(s), s.wallpaper === 'custom' ? 'important' : '');
     // Phone-only roleplay puts the device centre stage over a dimmed chat.
     const focus = ui.open && s.enabled && s.focusPhoneOnly && hasChat() && isPhoneOnly();
     device.classList.toggle('stp-focus', focus);
@@ -223,7 +279,7 @@ export function render() {
             </div>
         </div>`;
     } else {
-        const onHome = view === null;
+        const onHome = view === null || ui.locked;
         device.innerHTML = `<div class="stp-frame">
             <span class="stp-hw stp-hw-action"></span><span class="stp-hw stp-hw-vol1"></span><span class="stp-hw stp-hw-vol2"></span><span class="stp-hw stp-hw-power"></span>
             <div class="stp-screen ${appClass} ${onHome ? 'stp-on-home' : ''}">
@@ -259,6 +315,21 @@ export function render() {
         }
     }
     autosize(device);
+    bindHomePages(device);
+}
+
+/** Home screen pages: keep the page across re-renders and update the dots while swiping. */
+function bindHomePages(device) {
+    const pages = device.querySelector('.stp-home-pages');
+    if (!pages) return;
+    const page = Number(pages.dataset.page) || 0;
+    pages.scrollLeft = page * pages.clientWidth;
+    pages.addEventListener('scroll', () => {
+        const now = Math.round(pages.scrollLeft / Math.max(1, pages.clientWidth));
+        if (now === ui.homePage) return;
+        ui.homePage = now;
+        device.querySelectorAll('.stp-page-dots button').forEach((b, i) => b.classList.toggle('stp-active', i === now));
+    }, { passive: true });
 }
 
 function autosize(root) {
@@ -285,6 +356,8 @@ export function updateLauncher() {
 // -------------------------------------------------------------------- actions
 
 export function open(app) {
+    // A phone with notifications opens on the lock screen.
+    if (!ui.open && !app && settings().lockScreen && settings().mode !== 'pc' && hasChat() && lockNotes().length) ui.locked = true;
     ui.open = true;
     if (app) {
         ui.app = app;
@@ -296,6 +369,7 @@ export function open(app) {
 
 export function close() {
     ui.open = false;
+    ui.locked = false;
     ui.viewer = null;
     changed();
 }
@@ -385,6 +459,19 @@ const GLOBAL_ACTIONS = {
         changed();
     },
     'send-turn': () => sendTurn(),
+    'home-page': el => {
+        ui.homePage = Number(el.dataset.page) || 0;
+        const pages = document.querySelector('#stp-device .stp-home-pages');
+        pages?.scrollTo({ left: ui.homePage * pages.clientWidth, behavior: 'smooth' });
+    },
+    unlock: () => {
+        ui.locked = false;
+        changed();
+    },
+    'lock-open': el => {
+        ui.locked = false;
+        navigate(el.dataset.app, el.dataset.view || null, el.dataset.contact ? { contact: el.dataset.contact } : {});
+    },
     'phone-only-toggle': () => {
         const on = !isPhoneOnly();
         setPhoneOnly(on);

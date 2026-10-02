@@ -22,7 +22,7 @@ function clip(text, limit = CARD_LIMIT) {
 }
 
 /** Card fields for a character (never the first message or alternate greetings). */
-function cardFor(name) {
+export function cardFor(name) {
     const c = ctx();
     const chid = c.characters?.findIndex(x => sameName(x.name, name));
     if (chid === undefined || chid < 0) return null;

@@ -1,6 +1,7 @@
 // Quiet-prompt generation (peeks, catalogs, feeds) with lenient JSON parsing.
-import { changed, ctx, isUser, liveItems, nextId, people, promptText, saveState, settings, state, sub } from './core.js';
+import { changed, isUser, liveItems, nextId, people, promptText, saveState, state, sub } from './core.js';
 import { storyContext } from './context.js';
+import { llm } from './llm.js';
 import { autoImages } from './images.js';
 import { updateInjection } from './inject.js';
 import { arr, norm, parseAgo, parseJson, sameName, str, toMoney, toNum } from './util.js';
@@ -28,32 +29,16 @@ export async function runJson(key, vars = {}, { busyKey = key, asCharacter = nul
     if (busy.has(busyKey)) return null;
     busy.add(busyKey);
     changed();
-    const c = ctx();
     try {
         // Card-only for chats without an intro, card + intro, or card + chat history.
         const template = promptText(key);
         const context = storyContext(asCharacter ?? vars.name ?? null);
         const prompt = sub(template.includes('{{context}}') ? template : `${template}\n\n{{context}}`, { ...vars, context });
-        let forceChId = null;
-        if (c.groupId && asCharacter) {
-            const idx = c.characters.findIndex(x => sameName(x.name, asCharacter));
-            if (idx >= 0) forceChId = idx;
-        }
         quietDepth++;
         updateInjection();
         let raw;
         try {
-            if (c.generateQuietPrompt.length === 0) {
-                raw = await c.generateQuietPrompt({
-                    quietPrompt: prompt,
-                    skipWIAN: false,
-                    removeReasoning: true,
-                    forceChId,
-                    responseLength: Number(settings().peekTokens) || null,
-                });
-            } else {
-                raw = await c.generateQuietPrompt(prompt, false, false);
-            }
+            raw = await llm(prompt, { asCharacter });
         } finally {
             quietDepth--;
             updateInjection();
