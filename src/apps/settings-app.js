@@ -1,9 +1,10 @@
-import { changed, ctx, META_KEY, money, saveSettings, saveState, settings, state } from '../core.js';
+import { changed, ctx, money, saveSettings, saveState, settings, state } from '../core.js';
 import { imageAvailable, imageProviders } from '../images.js';
 import { updateInjection } from '../inject.js';
 import { header, input, sectionLabel } from '../ui/kit.js';
 import { modeCard } from './messages.js';
-import { draft, navigate, ui } from '../ui/state.js';
+import { confirmReset } from '../reset.js';
+import { draft } from '../ui/state.js';
 import { SKINS, WALLPAPERS, wallpaperCss } from '../ui/theme.js';
 import { esc, toMoney } from '../util.js';
 
@@ -64,7 +65,13 @@ export default {
                 ${sectionLabel('This chat')}
                 <div class="stp-card stp-list-card">${modeCard()}</div>
                 <div class="stp-card stp-list-card">${toggleRow('focusPhoneOnly', 'Centre the device in phone-only mode', 'Dims the chat behind it')}</div>
-                <div class="stp-card"><button class="stp-btn stp-btn-danger" data-act="wipe"><i class="fa-regular fa-trash-can"></i><span>Clear phone data for this chat</span></button></div>
+                ${sectionLabel('Reset')}
+                <div class="stp-card stp-reset-card">
+                    <button class="stp-btn stp-btn-soft" data-act="reset-generated"><i class="fa-solid fa-broom"></i><span>Clear generated content</span></button>
+                    <div class="stp-muted stp-small">Feeds, peeks, characters' phones, servers, inboxes… Your texts, payments and posts stay.</div>
+                    <button class="stp-btn stp-btn-danger" data-act="reset-all"><i class="fa-solid fa-rotate-left"></i><span>Reset phone &amp; PC for this chat</span></button>
+                    <div class="stp-muted stp-small">A brand-new device: everything on it is cleared. The chat itself isn't changed.</div>
+                </div>
                 <div class="stp-muted stp-small stp-pad stp-center">More options: SillyTavern → Extensions → Phone &amp; PC</div>
             </div>`;
     },
@@ -101,15 +108,7 @@ export default {
             saveState();
             changed();
         },
-        wipe: async () => {
-            const c = ctx();
-            const ok = await c.callGenericPopup('Clear all texts, payments, orders, matches and feeds for this chat?', c.POPUP_TYPE.CONFIRM);
-            if (!ok) return;
-            c.chatMetadata[META_KEY] = {};
-            saveState();
-            updateInjection();
-            ui.drafts = {};
-            navigate('home');
-        },
+        'reset-generated': () => confirmReset('generated'),
+        'reset-all': () => confirmReset('all'),
     },
 };

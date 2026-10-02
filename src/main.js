@@ -12,6 +12,7 @@ import { applyDevicePosition, close, createDom, open, toggle } from './ui/shell.
 import { navigate, resetUi, ui } from './ui/state.js';
 import { setOwner } from './apps/theirs.js';
 import { commentsOnMyPost } from './comments.js';
+import { confirmReset } from './reset.js';
 import { applyChatHiding, currentContact, isPhoneOnly, setPhoneOnly } from './turn.js';
 import { maybeSpam } from './apps/extras.js';
 import { debounce, norm, sameName } from './util.js';
@@ -123,10 +124,14 @@ function registerSlashCommand() {
     try {
         c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
             name: 'phone',
-            helpString: `Open, close or toggle the in-story phone, jump to an app, or switch this chat to phone-only roleplay (only) and back (story). Usage: /phone [open|close|toggle|pc|phone|only|story|${ALL_APPS.map(a => a.id).join('|')}]`,
+            helpString: `Open, close or toggle the in-story phone, jump to an app, or switch this chat to phone-only roleplay (only) and back (story). /phone reset gives this chat a brand-new phone; /phone clear removes generated content only. Usage: /phone [open|close|toggle|pc|phone|only|story|reset|clear|${ALL_APPS.map(a => a.id).join('|')}]`,
             callback: (_args, value) => {
                 const v = norm(value);
-                if (v === 'only' || v === 'phone-only') {
+                if (v === 'reset' || v === 'reset all') {
+                    confirmReset('all');
+                } else if (v === 'reset generated' || v === 'clear') {
+                    confirmReset('generated');
+                } else if (v === 'only' || v === 'phone-only') {
                     setPhoneOnly(true);
                     updateInjection();
                     const ct = currentContact();
@@ -153,7 +158,7 @@ function registerSlashCommand() {
 
 function exposeApi() {
     const api = {
-        version: '0.8.2',
+        version: '0.8.3',
         registerImageProvider: (id, label, fn) => {
             registerImageProvider(id, label, fn);
             syncSettingsUi();

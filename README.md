@@ -192,6 +192,15 @@ Custom prompts can place this anywhere with `{{context}}`. If they leave it out,
 
 Instant replies with the chat as memory, group texts, reactions, voice messages, the lock screen, skins, streams, news, plans and spam texts were inspired by [Phone-ST](https://github.com/Delidgi-meow/Phone-ST) by Delidgi. All the code here is our own.
 
+## Resetting
+
+Two options, for the current chat only. You'll find both at the bottom of the phone's **Settings** app, under Extensions → Phone & PC, and as slash commands:
+
+- **Clear generated content** (`/phone clear`) clears feeds, peeks, characters' phones and PCs, Chord servers, channels, inboxes, game libraries and comment threads. Your texts, calls, payments, orders, posts and notes stay.
+- **Reset phone & PC** (`/phone reset`) gives you a brand-new device: everything on it is cleared.
+
+Neither one changes the chat itself.
+
 ## Notes
 
 - **"Bad Gateway" (502), 503, 504 or rate-limit errors** come from your API connection (the provider or a proxy in front of it), not from the phone. Some OpenAI-compatible providers drop long requests that aren't streamed, and SillyTavern's built-in background ("quiet") requests never are. So with a Chat Completion API, the phone **streams its requests** like a chat reply (*Stream phone requests like chat replies*, on by default). If streaming fails, it falls back to a quiet request. Failed requests are retried automatically (3 tries, with a pause), and requests are spaced out a little. If it keeps happening, lower *Peek response length*, or pick a different *Connection for the phone*.

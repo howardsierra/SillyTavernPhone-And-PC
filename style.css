@@ -6110,3 +6110,6 @@
 }
 #stp-device .stp-widget-mail { background: linear-gradient(150deg, rgba(79, 172, 254, 0.55), rgba(21, 101, 216, 0.45)); }
 #stp-device .stp-widget-game { min-height: 0; background: linear-gradient(150deg, rgba(42, 71, 94, 0.75), rgba(23, 26, 33, 0.7)); }
+#stp-device .stp-reset-card { display: flex; flex-direction: column; gap: 6px; }
+#stp-device .stp-reset-card .stp-btn { width: 100%; justify-content: center; }
+#stp-device .stp-reset-card .stp-btn + .stp-muted { margin-bottom: 8px; }

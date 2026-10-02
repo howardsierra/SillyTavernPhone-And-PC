@@ -1,5 +1,5 @@
 // The "Phone & PC" drawer in SillyTavern's Extensions panel.
-import { changed, ctx, saveSettings, settings } from './core.js';
+import { changed, ctx, hasChat, saveSettings, settings } from './core.js';
 import { imageProviders } from './images.js';
 import { phoneProfiles } from './llm.js';
 import { SKINS } from './ui/theme.js';
@@ -7,6 +7,7 @@ import { updateInjection } from './inject.js';
 import { DEFAULT_PROMPTS, PROMPT_LABELS } from './prompts-default.js';
 import { applyChatHiding } from './turn.js';
 import { applyDevicePosition, open, resetPositions } from './ui/shell.js';
+import { confirmReset } from './reset.js';
 import { esc } from './util.js';
 
 const NUMERIC = new Set(['maxTexts', 'maxPosts', 'depth', 'role', 'peekTokens', 'startingBalance', 'replyTokens', 'phoneHistory']);
@@ -30,6 +31,8 @@ function html() {
             <div class="flex-container">
                 <div class="menu_button menu_button_icon" id="stp-open-btn"><i class="fa-solid fa-mobile-screen-button"></i> Open phone</div>
                 <div class="menu_button menu_button_icon" id="stp-reset-pos"><i class="fa-solid fa-up-down-left-right"></i> Reset positions</div>
+                <div class="menu_button menu_button_icon" id="stp-reset-generated" title="Clear feeds, peeks, characters' phones, servers, inboxes… (your texts, payments and posts stay)"><i class="fa-solid fa-broom"></i> Clear generated (this chat)</div>
+                <div class="menu_button menu_button_icon redWarningBG" id="stp-reset-all" title="Reset the phone and PC for this chat"><i class="fa-solid fa-rotate-left"></i> Reset phone (this chat)</div>
             </div>
             ${check('enabled', 'Enabled')}
             ${check('showLauncher', 'Show floating phone button')}
@@ -207,5 +210,7 @@ export function createSettingsPanel() {
     });
     document.getElementById('stp-open-btn').addEventListener('click', () => open());
     document.getElementById('stp-reset-pos').addEventListener('click', () => resetPositions());
+    document.getElementById('stp-reset-generated').addEventListener('click', () => hasChat() ? confirmReset('generated') : toastr.info('Open a chat first.'));
+    document.getElementById('stp-reset-all').addEventListener('click', () => hasChat() ? confirmReset('all') : toastr.info('Open a chat first.'));
 }
 

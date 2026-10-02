@@ -18,7 +18,8 @@ export function pickPerson(list, includeYou = false) {
     if (ui.owner) return ui.owner;
     const user = userName();
     const valid = n => list.some(x => x === n) || (includeYou && n === user);
-    if (!ui.params.person || !valid(ui.params.person)) ui.params.person = list[0] ?? (includeYou ? user : null);
+    // Your own phone opens on your own stuff; tap a chip to peek at someone else.
+    if (!ui.params.person || !valid(ui.params.person)) ui.params.person = includeYou ? user : (list[0] ?? null);
     return ui.params.person;
 }
 
