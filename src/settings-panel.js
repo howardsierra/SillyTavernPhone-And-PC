@@ -66,6 +66,8 @@ function html() {
             ${check('injectMoney', 'Include payments (Pocket)')}
             ${check('injectOrders', 'Include orders &amp; deliveries')}
             ${check('injectSearches', 'Include private searches (characters may get spoilers)')}
+            ${check('injectDevice', 'Include what you saw on characters\' own phones')}
+            ${check('snoopNoticed', 'Characters know when you\'ve looked through their phone')}
             ${row('Injection depth', '<input class="text_pole" type="number" min="0" max="100" data-setting="depth">')}
             ${row('Role', '<select class="text_pole" data-setting="role"><option value="0">System</option><option value="1">User</option><option value="2">Assistant</option></select>')}
             ${row('Peek response length (tokens)', '<input class="text_pole" type="number" min="300" max="8000" step="100" data-setting="peekTokens">', 'Peeks return a lot of JSON. If results get cut off, raise this.')}

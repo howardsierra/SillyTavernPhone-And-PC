@@ -132,7 +132,7 @@ export function gradientFor(text) {
 }
 
 export function initials(name) {
-    return String(name ?? '?').trim().split(/\s+/).slice(0, 2).map(x => x[0]?.toUpperCase() ?? '').join('') || '?';
+    return String(name ?? '?').trim().split(/\s+/).slice(0, 2).map(x => Array.from(x)[0]?.toUpperCase() ?? '').join('') || '?';
 }
 
 /**

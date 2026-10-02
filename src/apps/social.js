@@ -13,6 +13,7 @@ const META = {
 };
 
 export function pickPerson(list, includeYou = false) {
+    if (ui.owner) return ui.owner;
     const user = userName();
     const valid = n => list.some(x => x === n) || (includeYou && n === user);
     if (!ui.params.person || !valid(ui.params.person)) ui.params.person = list[0] ?? (includeYou ? user : null);
@@ -245,6 +246,8 @@ function makeApp(app) {
         },
         render() {
             if (ui.view === 'post') return postView(app);
+            // On a character's phone, their app opens on their own profile.
+            if (ui.owner) return `${header(`<i class="${meta.icon}"></i> ${meta.label}`)}${profileView(app, [ui.owner])}`;
             const tab = ui.params.tab ?? 'feed';
             const busy = isBusy(`feed:${app}`);
             const refresh = tab === 'feed'

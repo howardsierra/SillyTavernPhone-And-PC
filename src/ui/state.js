@@ -16,6 +16,10 @@ export const ui = {
     typing: null,
     locked: false,
     homePage: 0,
+    // Whose device is showing: null = {{user}}'s, or a character's name.
+    owner: null,
+    ownerMenu: false,
+    peekAll: null,
 };
 
 export function navigate(app, view = null, params = {}) {
@@ -38,5 +42,5 @@ export function clearDrafts(...keys) {
 }
 
 export function resetUi() {
-    Object.assign(ui, { app: ui.app === 'home' ? 'home' : ui.app, view: null, params: {}, drafts: {}, banner: null, viewer: null, overlay: null });
+    Object.assign(ui, { app: ui.app === 'home' ? 'home' : ui.app, view: null, params: {}, drafts: {}, banner: null, viewer: null, overlay: null, owner: null, ownerMenu: false });
 }

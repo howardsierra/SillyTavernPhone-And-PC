@@ -39,6 +39,8 @@ export function tabs(list, active, act = 'tab') {
 }
 
 export function personChips(list, active, { includeYou = false, act = 'pick-person' } = {}) {
+    // On someone else's phone there's only them.
+    if (ui.owner) return '';
     const user = userName();
     const all = includeYou ? [...list, user] : list;
     if (!all.length) return '';

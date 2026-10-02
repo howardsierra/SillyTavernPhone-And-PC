@@ -1,14 +1,15 @@
 // The device: frame, home screen / desktop, routing, gestures and global actions.
-import { allActions, appById, DOCK, visibleApps } from '../apps/index.js';
+import { allActions, appById, DOCK, userApps, visibleApps } from '../apps/index.js';
+import { owner, ownerOptions, theirLockNotes, theirWidgets } from '../apps/theirs.js';
 import { sendText } from '../apps/messages.js';
-import { balance, changed, findById, hasChat, liveItems, money, onChange, pendingItems, saveSettings, saveState, settings, state, userName } from '../core.js';
+import { avatarUrl, balance, changed, findById, hasChat, liveItems, money, onChange, pendingItems, saveSettings, saveState, settings, state, userName } from '../core.js';
 import { orderStepLabel, requestStatus } from '../derived.js';
 import { peek, peekApp } from '../gen.js';
 import { generateImage, retakeImage } from '../images.js';
 import { updateInjection } from '../inject.js';
 import { currentContact, isInstant, isPhoneOnly, sendTurn, setPhoneOnly } from '../turn.js';
-import { ago, esc, norm } from '../util.js';
-import { empty, header } from './kit.js';
+import { ago, esc, gradientFor, norm } from '../util.js';
+import { avatar, empty, header } from './kit.js';
 import { navigate, ui } from './state.js';
 import { wallpaperCss } from './theme.js';
 
@@ -28,7 +29,7 @@ function badgeFor(app) {
 
 export function totalBadge() {
     if (!hasChat()) return 0;
-    return visibleApps().reduce((sum, a) => sum + badgeFor(a), 0);
+    return userApps().reduce((sum, a) => sum + badgeFor(a), 0);
 }
 
 function appIcon(app, { label = true } = {}) {
@@ -44,6 +45,7 @@ function appIcon(app, { label = true } = {}) {
 
 function widgets() {
     if (!hasChat()) return '';
+    if (owner()) return theirWidgets(owner());
     const items = liveItems();
     const unread = items.filter(x => x.kind === 'sms' && x.dir === 'in' && !x.read).sort((a, b) => b.time - a.time);
     const nextOrder = items.filter(x => x.kind === 'order' && x.source !== 'gen' && (x.recipient === userName() || x.from === userName()))
@@ -86,7 +88,7 @@ function homeView() {
     const page = Math.min(ui.homePage ?? 0, pages.length - 1);
     return `<div class="stp-home">
         <div class="stp-home-pages" data-page="${page}">${pages.map((list, i) => `<div class="stp-home-page">
-            ${i === 0 ? `<div class="stp-home-clock">
+            ${i === 0 ? `${ownerSwitch()}<div class="stp-home-clock">
                 <div class="stp-home-date">${esc(d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }))}</div>
                 <div class="stp-home-time">${esc(d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s?[AP]M$/i, ''))}</div>
             </div>
@@ -166,9 +168,10 @@ function lockNotes() {
 
 function lockView() {
     const d = new Date();
-    const notes = lockNotes();
+    const notes = owner() ? theirLockNotes(owner()) : lockNotes();
     return `<div class="stp-lock">
         <div class="stp-lock-icon"><i class="fa-solid fa-lock"></i></div>
+        ${owner() ? `<div class="stp-lock-owner">${esc(owner())}'s phone</div>` : ''}
         <div class="stp-home-clock">
             <div class="stp-home-date">${esc(d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }))}</div>
             <div class="stp-home-time">${esc(d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/\s?[AP]M$/i, ''))}</div>
@@ -202,6 +205,49 @@ function currentView() {
     }
 }
 
+
+// ------------------------------------------------------------- whose device
+
+function deviceName(kind) {
+    const who = owner();
+    return who ? `${who}'s ${kind}` : `Your ${kind}`;
+}
+
+/** The pill that swaps between {{user}}'s device and a character's. */
+function ownerSwitch() {
+    if (!hasChat() || !ownerOptions().length) return '';
+    const who = owner();
+    const kind = settings().mode === 'pc' ? 'PC' : 'phone';
+    return `<button class="stp-owner-switch ${who ? 'stp-theirs' : ''}" data-act="owner-menu" title="Swap whose ${kind} this is">
+        ${avatar(who ?? userName(), 'xs')}<span>${esc(deviceName(kind))}</span><i class="fa-solid fa-right-left"></i>
+    </button>`;
+}
+
+function ownerSheet() {
+    if (!ui.ownerMenu) return '';
+    const kind = settings().mode === 'pc' ? 'PC' : 'phone';
+    const row = (name, label, sub) => `<button class="stp-row stp-owner-option ${(name || null) === owner() ? 'stp-active' : ''}" data-act="owner-set" data-name="${esc(name)}">
+        ${avatar(name || userName(), 'md')}<div class="stp-row-main"><div class="stp-row-title">${esc(label)}</div><div class="stp-row-sub">${esc(sub)}</div></div>
+        ${(name || null) === owner() ? '<i class="fa-solid fa-check"></i>' : ''}
+    </button>`;
+    return `<div class="stp-sheet-backdrop" data-act="owner-close"></div>
+        <div class="stp-sheet stp-owner-sheet">
+            <div class="stp-sheet-grip"></div>
+            <div class="stp-sheet-title">Whose ${kind}?</div>
+            ${row('', `Your ${kind}`, userName())}
+            ${ownerOptions().map(n => row(n, `${n}'s ${kind}`, 'Look through it')).join('')}
+        </div>`;
+}
+
+/** A character's device wears their picture as wallpaper. */
+function ownerWallpaper() {
+    const who = owner();
+    if (!who) return null;
+    const url = avatarUrl(who);
+    const tint = 'linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.6))';
+    return url ? `${tint}, center 20% / cover no-repeat url("${String(url).replace(/["\\]/g, '')}")` : `${tint}, ${gradientFor(who)}`;
+}
+
 // --------------------------------------------------------------------- render
 
 let renderQueued = false;
@@ -228,7 +274,11 @@ export function render() {
     for (const cls of [...device.classList]) if (cls.startsWith('stp-skin-')) device.classList.remove(cls);
     device.classList.add(`stp-skin-${s.skin || 'classic'}`);
     // A custom wallpaper beats a skin's built-in one.
-    device.style.setProperty('--stp-wallpaper', wallpaperCss(s), s.wallpaper === 'custom' ? 'important' : '');
+    // Drop a stale owner (they left the chat, or the chat changed).
+    if (ui.owner && !ownerOptions().some(n => n === ui.owner)) ui.owner = null;
+    device.classList.toggle('stp-theirs', !!owner());
+    const theirWall = ownerWallpaper();
+    device.style.setProperty('--stp-wallpaper', theirWall ?? wallpaperCss(s), theirWall || s.wallpaper === 'custom' ? 'important' : '');
     // Phone-only roleplay puts the device centre stage over a dimmed chat.
     const focus = ui.open && s.enabled && s.focusPhoneOnly && hasChat() && isPhoneOnly();
     device.classList.toggle('stp-focus', focus);
@@ -265,7 +315,8 @@ export function render() {
         device.innerHTML = `<div class="stp-window">
             <div class="stp-titlebar stp-drag">
                 <span class="stp-lights"><button data-act="close" title="Close" class="stp-light stp-light-red"></button><button data-act="home" title="Desktop" class="stp-light stp-light-yellow"></button><button data-act="toggle-mode" title="Switch to phone" class="stp-light stp-light-green"></button></span>
-                <span class="stp-titlebar-title">${esc(app ? app.label : `${userName()}'s PC`)}</span>
+                <span class="stp-titlebar-title">${esc(app ? `${app.label}${owner() ? ` — ${owner()}'s PC` : ''}` : owner() ? `${owner()}'s PC` : `${userName()}'s PC`)}</span>
+                ${ownerOptions().length && hasChat() ? `<button class="stp-titlebar-owner" data-act="owner-menu" title="Swap whose PC this is">${avatar(owner() ?? userName(), 'xs')}<i class="fa-solid fa-right-left"></i></button>` : ''}
                 <span class="stp-titlebar-clock">${esc(nowText())}</span>
             </div>
             <div class="stp-pc-body">
@@ -275,6 +326,7 @@ export function render() {
                     ${outboxBar()}
                     ${bannerHtml()}
                     ${viewerHtml()}
+                    ${ownerSheet()}
                 </main>
             </div>
         </div>`;
@@ -285,6 +337,7 @@ export function render() {
             <div class="stp-screen ${appClass} ${onHome ? 'stp-on-home' : ''}">
                 <div class="stp-statusbar stp-drag">
                     <span class="stp-status-time">${esc(nowText().replace(/\s?[AP]M$/i, ''))}</span>
+                    ${owner() && !onHome ? `<button class="stp-status-owner" data-act="owner-menu" title="${esc(owner())}'s phone — tap to swap">${avatar(owner(), 'xs')}</button>` : ''}
                     <span class="stp-island ${ui.banner ? 'stp-island-wide' : ''}"></span>
                     <span class="stp-status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><span class="stp-battery"><i></i></span>
                     <button class="stp-close" data-act="close" title="Close phone" aria-label="Close phone"><i class="fa-solid fa-xmark"></i></button></span>
@@ -293,6 +346,7 @@ export function render() {
                 ${outboxBar()}
                 ${bannerHtml()}
                 ${viewerHtml()}
+                ${ownerSheet()}
                 <div class="stp-homebar" data-act="home" title="Home"></div>
             </div>
         </div>`;
@@ -485,6 +539,8 @@ const GLOBAL_ACTIONS = {
     'banner-open': () => {
         const go = ui.banner?.go;
         ui.banner = null;
+        // Notifications are for {{user}}'s own phone.
+        if (go) ui.owner = null;
         if (go) go();
         else changed();
     },

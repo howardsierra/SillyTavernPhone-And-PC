@@ -10,6 +10,7 @@ import { processMessage, scanChat } from './parse.js';
 import { createSettingsPanel, syncSettingsUi } from './settings-panel.js';
 import { applyDevicePosition, close, createDom, open, toggle } from './ui/shell.js';
 import { navigate, resetUi, ui } from './ui/state.js';
+import { setOwner } from './apps/theirs.js';
 import { applyChatHiding, currentContact, isPhoneOnly, setPhoneOnly } from './turn.js';
 import { maybeSpam } from './apps/extras.js';
 import { debounce, norm, sameName } from './util.js';
@@ -139,7 +140,7 @@ function registerSlashCommand() {
 
 function exposeApi() {
     const api = {
-        version: '0.6.0',
+        version: '0.7.0',
         registerImageProvider: (id, label, fn) => {
             registerImageProvider(id, label, fn);
             syncSettingsUi();
@@ -149,6 +150,8 @@ function exposeApi() {
         open,
         close,
         navigate,
+        /** Show a character's phone/PC (or {{user}}'s own with no name). */
+        setOwner,
         get state() {
             return state();
         },

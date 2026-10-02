@@ -17,6 +17,11 @@ export const PROMPT_LABELS = {
     tgPosts: 'Channels: a channel\'s posts',
     velvetCreators: 'Velvet (18+): creators',
     velvetPosts: 'Velvet (18+): a creator\'s posts',
+    devTexts: 'Their phone: a character\'s private text conversations',
+    devThread: 'Their phone: more of one conversation',
+    devCalls: 'Their phone: call log',
+    devNotes: 'Their phone: private notes',
+    devPhotos: 'Their phone: camera roll',
     news: 'News: headlines',
     live: 'Live: who is streaming',
     liveChat: 'Live: a stream\'s chat',
@@ -172,6 +177,47 @@ ${JSON_ONLY}
 
 ${JSON_ONLY}
 {"posts": [{"image": "photo description", "caption": "...", "likes": 230, "ago": "1d"}]}]`,
+
+    devTexts: `[OOC: Pause the roleplay. {{user}} is looking through {{name}}'s phone, at their Messages app. Invent {{count}} of {{name}}'s recent text conversations with people OTHER than {{user}}: friends, family, coworkers, exes, a group chat — and people from the story where it fits ({{people}}). Each has 4-10 recent messages that reveal {{name}}'s life, worries and secrets, consistent with the story; sometimes they talk about {{user}}. Also give the name {{name}} saved {{user}} under in their contacts (a nickname, an emoji, a plain name — whatever fits how they feel). ${STYLE} ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"userContactName": "...", "threads": [{"contact": "name or group name", "members": ["only for group chats"], "messages": [{"from": "me (for {{name}}) or the sender's name", "text": "...", "image": "optional: what a sent photo shows", "ago": "2h"}]}]}]`,
+
+    devThread: `[OOC: Pause the roleplay. On {{name}}'s phone, the text conversation with {{contact}}. The latest messages:
+{{recent}}
+
+Write the next 3-6 messages of this conversation, as it continues right now ({{name}} and {{contact}} both may write). ${STYLE} ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"messages": [{"from": "me (for {{name}}) or the sender's name", "text": "...", "image": "optional", "ago": "now"}]}]`,
+
+    devCalls: `[OOC: Pause the roleplay. {{user}} is looking through {{name}}'s phone, at their recent calls (not counting calls with {{user}}). Invent 8-12 calls that fit {{name}}'s life and the story: who called, who they called, missed calls, a voicemail or two. ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"calls": [{"contact": "name", "dir": "in or out", "status": "answered, missed or declined", "duration": "4:12", "ago": "3h", "voicemail": "optional transcript of a voicemail left for {{name}}"}]}]`,
+
+    devNotes: `[OOC: Pause the roleplay. {{user}} is looking through {{name}}'s phone, at their private Notes app. Invent 4-7 notes {{name}} wrote for themselves: lists, reminders, drafts of messages they never sent, a diary-like entry, ideas, things about people in their life (maybe {{user}}). ${STYLE} ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"notes": [{"title": "...", "body": "the note text (line breaks allowed)", "ago": "2d"}]}]`,
+
+    devPhotos: `[OOC: Pause the roleplay. {{user}} is looking through {{name}}'s phone, at their camera roll. Invent 9-12 recent photos and screenshots that fit {{name}}'s life and the story: selfies, friends, places, food, pets, memes, screenshots of conversations, maybe one they'd rather nobody saw (album "Hidden"). ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"photos": [{"image": "detailed description of the photo", "album": "Recents, Favorites, Screenshots or Hidden", "ago": "1d"}]}]`,
 
     news: `[OOC: Pause the roleplay. Write the news feed {{user}} sees on their phone right now: 8 articles from the world of the story — local news, world events, gossip, entertainment, weather, sports or the in-world equivalent. Where it fits, include stories touching on recent story events or people (rumours, sightings, consequences), but keep most of it everyday news that makes the world feel alive. ${WORLD}
 {{more}}

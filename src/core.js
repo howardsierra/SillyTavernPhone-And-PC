@@ -37,6 +37,8 @@ export const defaultSettings = {
     depth: 1,
     role: 0,
     peekTokens: 1800,
+    injectDevice: true,
+    snoopNoticed: false,
     // money
     currency: '$',
     startingBalance: 1250,
@@ -136,6 +138,7 @@ export function state() {
     st.tg ??= { channels: [], reveals: 0 };
     st.velvet ??= { creators: [] };
     st.velvet.me ??= { posts: [], price: 9.99, bio: '', cashedOut: 0 };
+    st.devices ??= {};
     return st;
 }
 
@@ -436,5 +439,6 @@ export function findById(id) {
         ?? st.tg.channels.flatMap(c => c.posts ?? []).find(x => x.id === id)
         ?? st.velvet.creators.flatMap(c => [c.cover, c.pic, ...(c.posts ?? [])]).find(x => x?.id === id)
         ?? st.velvet.me.posts.find(x => x.id === id)
+        ?? Object.values(st.devices).flatMap(d => [...(d.photos ?? []), ...(d.threads ?? []).flatMap(t => t.messages)]).find(x => x.id === id)
         ?? null;
 }

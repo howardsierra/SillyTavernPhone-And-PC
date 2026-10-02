@@ -3,6 +3,7 @@ import { PROMPT_KEY, ctx, hasChat, isChatCharacter, isJustSent, isUser, liveItem
 import { isDelivered, orderStepLabel, ratedStats, requestStatus } from './derived.js';
 import { channelsContext } from './apps/channels.js';
 import { chordContext } from './apps/chord.js';
+import { deviceContext } from './apps/theirs.js';
 import { velvetContext } from './apps/velvet.js';
 import { commentContext } from './comments.js';
 import { isQuietGenerating } from './gen.js';
@@ -112,6 +113,9 @@ export function updateInjection() {
     // Comment threads: what {{user}} and story characters said under posts.
     const commentLines = commentContext(items.filter(x => x.kind === 'post' && x.thread?.length));
     if (commentLines.length) parts.push(`[Recent comments on social media]\n${commentLines.join('\n')}`);
+
+    // What's on characters' own phones, once {{user}} has looked.
+    parts.push(...deviceContext());
 
     // Chord servers and Telegram-style channels.
     const chordLines = chordContext();
