@@ -1,4 +1,4 @@
-import { avatarUrl, changed, isUser, liveItems, people, queueItem, saveState, settings, state, userName } from '../core.js';
+import { avatarUrl, cast, changed, isUser, liveItems, queueItem, saveState, settings, state, userName } from '../core.js';
 import { addComment, commentCount, commentsOnMyPost, generateComments, threadOf } from '../comments.js';
 import { isInstant } from '../turn.js';
 import { updateInjection } from '../inject.js';
@@ -114,6 +114,14 @@ function coverHtml(name, app) {
     const url = avatarUrl(name);
     const tint = app === 'x' ? gradientFor(`${name}x`) : META[app].color;
     return `<div class="stp-profile-cover ${url ? 'stp-has-photo' : ''}" style="--cover:${tint}${url ? `;--cover-img:url('${esc(url).replace(/'/g, '%27')}')` : ''}"></div>`;
+}
+
+/** Profiles to flip between: the chat's character(s), plus anyone whose name you tapped. */
+function profileList() {
+    const list = cast();
+    const picked = ui.params.person;
+    if (picked && !isUser(picked) && !list.some(n => sameName(n, picked))) list.push(picked);
+    return list;
 }
 
 function profileView(app, list) {
@@ -257,7 +265,7 @@ function makeApp(app) {
                 : '';
             return `${header(`<i class="${meta.icon}"></i> ${meta.label}`, { actions: refresh })}
                 ${tabs([{ id: 'feed', label: app === 'reddit' ? 'Home' : 'Feed', icon: 'fa-solid fa-house' }, { id: 'profiles', label: 'Profiles', icon: 'fa-solid fa-user' }], tab)}
-                ${tab === 'feed' ? feedView(app) : profileView(app, people())}`;
+                ${tab === 'feed' ? feedView(app) : profileView(app, profileList())}`;
         },
     };
 }

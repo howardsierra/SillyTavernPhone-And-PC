@@ -1,4 +1,4 @@
-import { liveItems, people, state } from '../core.js';
+import { cast, liveItems, state } from '../core.js';
 import { isBusy } from '../gen.js';
 import { empty, header, moreButton, peekButton, peekNote, personChips, sectionLabel, shimmerCards } from '../ui/kit.js';
 import { ago, esc, gradientFor, norm } from '../util.js';
@@ -19,7 +19,7 @@ export const browserApp = {
     color: 'linear-gradient(180deg, #5ac8fa, #0a7aff)',
     group: 'Life',
     render() {
-        const list = people();
+        const list = cast();
         const name = pickPerson(list);
         const items = liveItems().filter(x => x.from === name);
         const searches = items.filter(x => x.kind === 'search').sort((a, b) => b.time - a.time);
@@ -46,7 +46,7 @@ export const musicApp = {
     color: 'linear-gradient(180deg, #ff5f7e, #fa233b)',
     group: 'Life',
     render() {
-        const list = people();
+        const list = cast();
         const name = pickPerson(list);
         const tracks = liveItems().filter(x => x.kind === 'music' && x.from === name).sort((a, b) => b.time - a.time);
         const now = tracks[0];

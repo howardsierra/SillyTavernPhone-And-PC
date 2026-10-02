@@ -132,7 +132,9 @@ export function gradientFor(text) {
 }
 
 export function initials(name) {
-    return String(name ?? '?').trim().split(/\s+/).slice(0, 2).map(x => Array.from(x)[0]?.toUpperCase() ?? '').join('') || '?';
+    // Letters only: "James (mgr)" → "J", not "J(".
+    const words = String(name ?? '').replace(/\([^)]*\)/g, ' ').split(/\s+/).map(w => Array.from(w).find(ch => /\p{L}|\p{N}/u.test(ch))).filter(Boolean);
+    return words.slice(0, 2).join('').toUpperCase() || Array.from(String(name ?? '?').trim())[0] || '?';
 }
 
 /**

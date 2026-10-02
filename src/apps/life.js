@@ -1,5 +1,5 @@
 // Locate, Photos, Notes.
-import { changed, isUser, liveItems, nextId, people, saveState, state } from '../core.js';
+import { cast, changed, isUser, liveItems, nextId, saveState, state } from '../core.js';
 import { isBusy, locate } from '../gen.js';
 import { avatar, empty, header, iconBtn, input, photo, tabs, textarea } from '../ui/kit.js';
 import { clearDrafts, navigate, ui } from '../ui/state.js';
@@ -21,7 +21,7 @@ export const locateApp = {
     group: 'Life',
     render() {
         const locs = latestLocations();
-        const ppl = people();
+        const ppl = cast();
         const pins = ppl.filter(n => locs.has(norm(n))).map(n => {
             const loc = locs.get(norm(n));
             const x = 12 + seeded(`${loc.place}x`) * 76;

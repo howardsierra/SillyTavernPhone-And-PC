@@ -356,6 +356,12 @@ export function chatCharacters() {
     return names;
 }
 
+/** Who to peek at: just the chat's character(s), not every side character the phone knows. */
+export function cast() {
+    const list = chatCharacters();
+    return list.length ? list : people().slice(0, 1);
+}
+
 export function isChatCharacter(name) {
     return chatCharacters().some(n => sameName(n, name));
 }
