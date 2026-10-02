@@ -8,6 +8,7 @@ import { arr, norm, parseAgo, parseJson, sameName, str, toMoney, toNum } from '.
 
 let quietDepth = 0;
 const busy = new Set();
+const running = new Map();
 
 export function isQuietGenerating() {
     return quietDepth > 0;
@@ -24,9 +25,15 @@ export function isBusy(key) {
  * @param {object} opts
  * @param {string} [opts.busyKey] UI busy marker
  * @param {string} [opts.asCharacter] In group chats, generate as this member
+ * @param {boolean} [opts.queue] If the same thing is already generating, wait for it and run after (instead of skipping)
  */
-export async function runJson(key, vars = {}, { busyKey = key, asCharacter = null } = {}) {
-    if (busy.has(busyKey)) return null;
+export async function runJson(key, vars = {}, { busyKey = key, asCharacter = null, queue = false } = {}) {
+    if (busy.has(busyKey) && !queue) return null;
+    while (busy.has(busyKey)) await running.get(busyKey);
+    let finish;
+    running.set(busyKey, new Promise(r => {
+        finish = r;
+    }));
     busy.add(busyKey);
     changed();
     try {
@@ -56,6 +63,8 @@ export async function runJson(key, vars = {}, { busyKey = key, asCharacter = nul
         return null;
     } finally {
         busy.delete(busyKey);
+        running.delete(busyKey);
+        finish();
         changed();
     }
 }

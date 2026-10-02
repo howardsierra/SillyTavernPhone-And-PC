@@ -49,6 +49,35 @@ async function viaProfile(profileId, prompt, maxTokens) {
     return typeof result === 'string' ? result : (result?.content ?? '');
 }
 
+// SillyTavern runs one generation at a time: quiet prompts started while the chat
+// (or another phone request) is generating can fail or come back empty. So phone
+// requests wait their turn, one after another, and wait for the chat to finish.
+let queue = Promise.resolve();
+
+function chatGenerating() {
+    const stop = document.getElementById('mes_stop');
+    return !!stop && getComputedStyle(stop).display !== 'none';
+}
+
+async function waitForChat(maxMs = 180e3) {
+    const start = Date.now();
+    while (chatGenerating() && Date.now() - start < maxMs) await new Promise(r => setTimeout(r, 400));
+}
+
+/**
+ * Generate text for the phone (queued behind other phone requests and the chat).
+ * @param {string} prompt The instruction (macros already substituted)
+ * @param {object} [opts]
+ */
+export function llm(prompt, opts = {}) {
+    const run = queue.then(async () => {
+        await waitForChat();
+        return generate(prompt, opts);
+    });
+    queue = run.catch(() => {});
+    return run;
+}
+
 /**
  * Generate text for the phone.
  * @param {string} prompt The instruction (macros already substituted)
@@ -56,7 +85,7 @@ async function viaProfile(profileId, prompt, maxTokens) {
  * @param {string} [opts.asCharacter] In group chats, generate as this member
  * @param {number} [opts.maxTokens]
  */
-export async function llm(prompt, { asCharacter = null, maxTokens = null } = {}) {
+async function generate(prompt, { asCharacter = null, maxTokens = null } = {}) {
     const c = ctx();
     const s = settings();
     const tokens = Number(maxTokens) || Number(s.peekTokens) || 1200;

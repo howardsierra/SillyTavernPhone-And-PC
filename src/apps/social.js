@@ -1,5 +1,7 @@
 import { avatarUrl, changed, isUser, liveItems, people, queueItem, saveState, settings, state, userName } from '../core.js';
-import { addComment, commentCount, generateComments, threadOf } from '../comments.js';
+import { addComment, commentCount, commentsOnMyPost, generateComments, threadOf } from '../comments.js';
+import { isInstant } from '../turn.js';
+import { updateInjection } from '../inject.js';
 import { generateImage } from '../images.js';
 import { avatar, button, empty, header, input, moreButton, peekButton, peekNote, personChips, photo, queuedBadge, shimmerCards, tabs, textarea } from '../ui/kit.js';
 import { generateFeed, isBusy, peekApp } from '../gen.js';
@@ -103,7 +105,7 @@ function composer(app) {
         <div class="stp-composer-who">${avatar(userName(), 'sm')}<b>${esc(userName())}</b></div>
         ${extra}
         ${textarea(k, placeholder)}
-        <div class="stp-row-end"><span class="stp-muted stp-small">Goes live with your next chat reply</span><button class="stp-btn stp-btn-primary stp-btn-sm" data-act="post" data-app="${app}">Post</button></div>
+        <div class="stp-row-end"><span class="stp-muted stp-small">${isInstant() ? 'Posts right away — people will comment' : 'Goes live with your next chat reply'}</span><button class="stp-btn stp-btn-primary stp-btn-sm" data-act="post" data-app="${app}">Post</button></div>
     </div>`;
 }
 
@@ -223,8 +225,8 @@ function postView(app) {
         ${replyingTo ? `<div class="stp-attach-bar stp-replying-bar"><i class="fa-solid fa-reply"></i><span>Replying to <b>${esc(replyingTo.mine ? 'yourself' : replyingTo.author)}</b></span><button class="stp-icon-btn" data-act="comment-cancel-reply" title="Cancel"><i class="fa-solid fa-xmark"></i></button></div>` : ''}
         <div class="stp-composer">
             ${avatar(userName(), 'sm')}
-            <input class="stp-input stp-composer-input" data-draft="${esc(key)}" data-enter="comment-send" placeholder="${replyingTo ? `Reply to ${esc(replyingTo.mine ? 'yourself' : replyingTo.author)}…` : 'Add a comment…'}" value="${esc(ui.drafts[key] ?? '')}" ${busy ? 'disabled' : ''}>
-            <button class="stp-send" data-act="comment-send" title="Post comment" ${busy ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
+            <input class="stp-input stp-composer-input" data-draft="${esc(key)}" data-enter="comment-send" placeholder="${replyingTo ? `Reply to ${esc(replyingTo.mine ? 'yourself' : replyingTo.author)}…` : 'Add a comment…'}" value="${esc(ui.drafts[key] ?? '')}">
+            <button class="stp-send" data-act="comment-send" title="Post comment"><i class="fa-solid fa-arrow-up"></i></button>
         </div>
         <div class="stp-composer-hint">People reply right away</div>`;
 }
@@ -336,6 +338,19 @@ export const socialActions = {
         const item = queueItem({ kind: 'post', app, text, image, title, sub, postType: 'post', likes: 0, reposts: 0, replies: 0, upvotes: 1, commentCount: 0 });
         clearDrafts(k, `${k}:image`, `${k}:title`, `${k}:sub`);
         if (image && settings().images && settings().imageAuto !== 'off') generateImage(item.id, { quiet: false });
-        changed();
+        if (isInstant()) {
+            // Posting doesn't need a chat reply: it goes live now and people start commenting.
+            item.status = 'sent';
+            item.sentAtLen = (SillyTavern.getContext().chat ?? []).length;
+            item.time = Date.now();
+            saveState();
+            updateInjection();
+            changed();
+            if (settings().autoComments !== false) commentsOnMyPost(item);
+        } else {
+            // Comments arrive once it's posted with the next chat reply.
+            item.wantsComments = true;
+            changed();
+        }
     },
 };

@@ -54,18 +54,20 @@ export async function generateComments(post, mine = null) {
         thread: describeThread(post),
         task,
         people: people().join(', ') || '(none)',
-    }, { busyKey: `comments:${post.id}`, asCharacter: isUser(post.from) ? null : post.from });
-    if (!data) return;
+    }, { busyKey: `comments:${post.id}`, asCharacter: isUser(post.from) ? null : post.from, queue: !!mine });
+    if (!data) return 0;
 
     const st = state();
     const thread = threadOf(post);
     const known = people();
     const added = [];
     let t = Math.max(Date.now(), ...thread.map(c => c.time + 1));
-    for (const c of arr(data.comments)) {
-        const text = str(c.text);
+    // Accept the usual ways models phrase it: {"comments": […]}, {"replies": […]} or a bare list.
+    const list = arr(Array.isArray(data) ? data : data.comments ?? data.replies ?? data.reply ?? Object.values(data).find(Array.isArray));
+    for (const c of list) {
+        const text = str(c.text ?? c.comment ?? c.content ?? c.body ?? c.message);
         if (!text) continue;
-        const rawAuthor = str(c.author) || str(c.handle).replace(/^@|^u\//, '') || 'someone';
+        const rawAuthor = str(c.author ?? c.name ?? c.user ?? c.username) || str(c.handle).replace(/^@|^u\//, '') || 'someone';
         if (isUser(rawAuthor)) continue;
         const match = known.find(n => sameName(n, rawAuthor)) ?? (sameName(rawAuthor, author) ? author : null);
         const replyName = str(c.replyTo);
@@ -85,6 +87,11 @@ export async function generateComments(post, mine = null) {
     changed();
 
     // Let {{user}} know when someone answers them.
+    if (!added.length) {
+        console.warn('[Phone] no comments in the response', data);
+        toastr.warning('No comments came back. Try again, or raise "Peek response length" in the settings.', 'Phone');
+        return 0;
+    }
     const answer = added.find(c => c.replyTo && thread.find(x => x.id === c.replyTo)?.mine);
     if (answer) {
         notify({
@@ -93,6 +100,18 @@ export async function generateComments(post, mine = null) {
             go: () => navigate(post.app, 'post', { id: post.id }),
         });
     }
+    return added.length;
+}
+
+/** People react to a post {{user}} just made; {{user}} gets a notification. */
+export async function commentsOnMyPost(post) {
+    const n = await generateComments(post);
+    if (!n) return;
+    notify({
+        app: post.app, icon: 'fa-solid fa-comment', title: APP_NAMES[post.app] ?? post.app,
+        text: `${n} new comment${n === 1 ? '' : 's'} on your post`,
+        go: () => navigate(post.app, 'post', { id: post.id }),
+    });
 }
 
 /** {{user}} comments on a post (optionally replying to a comment) and people respond. */

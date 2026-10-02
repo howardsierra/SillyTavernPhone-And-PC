@@ -141,18 +141,24 @@ export function initials(name) {
  */
 export function parseJson(raw) {
     if (typeof raw !== 'string') return null;
-    let s = raw.replace(/```(?:json)?/gi, '');
-    const start = s.search(/[{[]/);
-    if (start < 0) return null;
-    s = s.slice(start);
-    const end = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
-    const attempts = [];
-    if (end > 0) attempts.push(s.slice(0, end + 1));
-    for (const candidate of attempts) {
-        const value = tryParse(candidate);
-        if (value !== undefined) return value;
+    const text = raw.replace(/```(?:json)?/gi, '');
+    // Models sometimes write a little prose (or a "[note]") before the JSON: try
+    // each place a JSON value could start, objects first.
+    const starts = [];
+    for (let i = 0; i < text.length && starts.length < 40; i++) {
+        if (text[i] === '{' || text[i] === '[') starts.push(i);
     }
-    return repairJson(s);
+    if (!starts.length) return null;
+    const end = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'));
+    const ordered = [...starts.filter(i => text[i] === '{'), ...starts.filter(i => text[i] === '[')];
+    for (const start of ordered) {
+        if (end <= start) continue;
+        const value = tryParse(text.slice(start, end + 1));
+        if (value && typeof value === 'object') return value;
+    }
+    // Cut off mid-way: repair from the first object.
+    const first = ordered[0];
+    return repairJson(text.slice(first));
 }
 
 function tryParse(s) {

@@ -11,6 +11,7 @@ import { createSettingsPanel, syncSettingsUi } from './settings-panel.js';
 import { applyDevicePosition, close, createDom, open, toggle } from './ui/shell.js';
 import { navigate, resetUi, ui } from './ui/state.js';
 import { setOwner } from './apps/theirs.js';
+import { commentsOnMyPost } from './comments.js';
 import { applyChatHiding, currentContact, isPhoneOnly, setPhoneOnly } from './turn.js';
 import { maybeSpam } from './apps/extras.js';
 import { debounce, norm, sameName } from './util.js';
@@ -77,6 +78,17 @@ function watchChat() {
     hide();
 }
 
+/** Posts that went out with the last chat reply get their comments now. */
+function commentOnPostedItems() {
+    if (!hasChat()) return;
+    for (const it of state().items) {
+        if (it.wantsComments && it.status === 'sent') {
+            delete it.wantsComments;
+            if (settings().autoComments !== false) commentsOnMyPost(it);
+        }
+    }
+}
+
 function registerEvents() {
     const c = ctx();
     const ev = c.eventTypes ?? c.event_types;
@@ -85,6 +97,7 @@ function registerEvents() {
     on(ev.MESSAGE_RECEIVED, (id, type) => {
         ui.typing = null;
         onMessage(id);
+        commentOnPostedItems();
         if (type !== 'extension' && type !== 'first_message') maybeSpam();
     });
     on(ev.GENERATION_ENDED, stopTyping);
@@ -140,7 +153,7 @@ function registerSlashCommand() {
 
 function exposeApi() {
     const api = {
-        version: '0.7.0',
+        version: '0.7.1',
         registerImageProvider: (id, label, fn) => {
             registerImageProvider(id, label, fn);
             syncSettingsUi();

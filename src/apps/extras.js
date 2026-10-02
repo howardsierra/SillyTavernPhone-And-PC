@@ -198,14 +198,14 @@ function chatOf(id) {
     return st.live.chats[id];
 }
 
-async function moreChat(stream) {
+async function moreChat(stream, { queue = false } = {}) {
     const log = chatOf(stream.id);
     const recent = log.slice(-12).map(m => `${m.user}: ${m.text}`).join('\n') || '(the stream just started)';
     const mine = log.filter(m => m.mine && !m.answered);
     const data = await runJson('liveChat', {
         streamer: stream.streamer, title: stream.title, category: stream.category,
         recent, userMsgs: mine.length ? mine.map(m => `"${m.text}"${m.donation ? ` (with a ${money(m.donation)} donation)` : ''}`).join(', ') : '(nothing yet)',
-    }, { busyKey: `live:${stream.id}`, asCharacter: stream.known ? stream.streamer : null });
+    }, { busyKey: `live:${stream.id}`, asCharacter: stream.known ? stream.streamer : null, queue });
     if (!data) return;
     mine.forEach(m => {
         m.answered = true;
@@ -314,7 +314,7 @@ export const liveApp = {
             ui.scrollBottom = true;
             saveState();
             changed();
-            moreChat(stream);
+            moreChat(stream, { queue: true });
         },
     },
 };

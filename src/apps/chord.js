@@ -51,7 +51,7 @@ async function chat(server, channel, mine = null) {
     const data = await runJson('serverChat', {
         server: server.name, channel: channel.name, topic: channel.topic || 'general chat',
         members: server.members.join(', ') || '(various members)', recent: describe(channel), task,
-    }, { busyKey: `chord:${channel.id}` });
+    }, { busyKey: `chord:${channel.id}`, queue: !!mine });
     if (!data) return;
     const known = people();
     let t = Math.max(Date.now() - (mine ? 0 : 20 * 60e3), ...channel.messages.map(m => m.time + 1));
@@ -195,7 +195,7 @@ export default {
             if (!channel) return;
             const key = `chord:${channel.id}`;
             const text = draft(key);
-            if (!text || isBusy(key)) return;
+            if (!text) return;
             const mine = { id: nextId(state()), author: userName(), text, time: Date.now(), mine: true };
             channel.messages.push(mine);
             clearDrafts(key);
