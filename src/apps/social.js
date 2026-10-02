@@ -1,6 +1,7 @@
 import { avatarUrl, cast, changed, isUser, liveItems, queueItem, saveState, settings, state, userName } from '../core.js';
 import { addComment, commentCount, commentsOnMyPost, generateComments, threadOf } from '../comments.js';
 import { isInstant } from '../turn.js';
+import { deleteButton, deletePostItem } from '../deletions.js';
 import { updateInjection } from '../inject.js';
 import { generateImage } from '../images.js';
 import { avatar, button, empty, header, input, moreButton, peekButton, peekNote, personChips, photo, queuedBadge, shimmerCards, tabs, textarea } from '../ui/kit.js';
@@ -44,6 +45,7 @@ export function renderPost(it, { detail = false } = {}) {
     if (it.app === 'x') {
         return `<article class="stp-post stp-post-x ${open ? 'stp-tappable' : ''}" ${open}>
             ${avatar(it.from, 'md')}
+            ${deleteButton(it)}
             <div class="stp-post-main">
                 <div class="stp-post-head"><b ${authorLink(it)}>${esc(name)}</b>${!isUser(it.from) ? ' <i class="fa-solid fa-circle-check stp-verified"></i>' : ''} <span class="stp-muted">${esc(handle)} · ${esc(when)}</span></div>
                 ${it.text ? `<div class="stp-post-text">${fmt(it.text)}</div>` : ''}
@@ -63,7 +65,7 @@ export function renderPost(it, { detail = false } = {}) {
         const preview = detail ? '' : threadOf(it).filter(c => !c.replyTo).slice(0, 2).map(cm => `<div class="stp-ig-comment"><b>${esc(cm.mine ? userName() : cm.handle || cm.author)}</b> ${esc(cm.text)}</div>`).join('');
         const viewAll = !detail && it.status !== 'pending' ? `<button class="stp-link-btn stp-ig-viewall" ${open}>${comments ? `View all ${compact(comments)} comments` : 'Add a comment…'}</button>` : '';
         return `<article class="stp-post stp-post-ig">
-            <div class="stp-post-head stp-ig-head"><span class="stp-ig-ring">${avatar(it.from, 'sm')}</span> <b ${authorLink(it)}>${esc(handle || name)}</b><i class="fa-solid fa-ellipsis stp-muted stp-ml-auto"></i></div>
+            <div class="stp-post-head stp-ig-head"><span class="stp-ig-ring">${avatar(it.from, 'sm')}</span> <b ${authorLink(it)}>${esc(handle || name)}</b><span class="stp-ml-auto">${deleteButton(it)}</span></div>
             ${photo({ ...it, image: it.image || 'a photo' }, 'stp-photo-square')}
             <div class="stp-ig-actions"><i class="fa-regular fa-heart"></i><i class="fa-regular fa-comment" ${open}></i><i class="fa-regular fa-paper-plane"></i><i class="fa-regular fa-bookmark stp-ml-auto"></i></div>
             <div class="stp-post-likes">${compact(it.likes)} likes</div>
@@ -78,6 +80,7 @@ export function renderPost(it, { detail = false } = {}) {
     const uname = handle || `u/${String(name).replace(/\s+/g, '_').toLowerCase()}`;
     if (it.postType === 'comment') {
         return `<article class="stp-post stp-post-reddit ${open ? 'stp-tappable' : ''}" ${open}>
+            ${deleteButton(it)}
             <div class="stp-muted stp-small"><b class="stp-reddit-sub">${esc(it.sub || 'r/all')}</b> · ${esc(uname)} commented · ${esc(when)}</div>
             ${it.parent ? `<div class="stp-reddit-parent"><i class="fa-solid fa-reply fa-flip-horizontal"></i> ${esc(it.parent)}</div>` : ''}
             <div class="stp-post-text">${fmt(it.text)}</div>
@@ -86,6 +89,7 @@ export function renderPost(it, { detail = false } = {}) {
         </article>`;
     }
     return `<article class="stp-post stp-post-reddit ${open ? 'stp-tappable' : ''}" ${open}>
+        ${deleteButton(it)}
         <div class="stp-muted stp-small"><b class="stp-reddit-sub">${esc(it.sub || 'r/all')}</b> · Posted by ${esc(uname)} · ${esc(when)}</div>
         ${it.title ? `<div class="stp-reddit-title">${esc(it.title)}</div>` : ''}
         ${it.text ? `<div class="stp-post-text">${fmt(it.text)}</div>` : ''}
@@ -329,6 +333,7 @@ export const socialActions = {
         ui.params = { tab: 'profiles', person: el.dataset.name };
         changed();
     },
+    'post-delete': el => deletePostItem(el.dataset.id),
     'peek-more': el => peekApp(el.dataset.name, el.dataset.app, { more: true }),
     'feed-refresh': el => generateFeed(el.dataset.app),
     'feed-more': el => generateFeed(el.dataset.app, { more: true }),

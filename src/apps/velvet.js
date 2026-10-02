@@ -1,5 +1,6 @@
 // Velvet — an 18+ subscription content app. Hidden unless "Adult (18+) apps" is on.
 // Subscribe to creators (maybe someone from the story), tip them, or run your own page.
+import { confirmDelete, deleteButton } from '../deletions.js';
 import { balance, changed, isUser, messagesSince, money, nextId, people, saveState, state, userName } from '../core.js';
 import { isBusy, runJson } from '../gen.js';
 import { autoImages, generateImage } from '../images.js';
@@ -165,7 +166,7 @@ function renderMe() {
             ${textarea('velvet:post-caption', 'Caption', { rows: 2 })}
             ${button('Post to subscribers', 'velvet-post', { icon: 'fa-solid fa-paper-plane' })}
         </div>
-        <div class="stp-velvet-grid">${me.posts.map(p => `<div class="stp-velvet-post">${photo(p, 'stp-photo-portrait', { adult: true })}${p.caption ? `<div class="stp-post-text">${fmt(p.caption)}</div>` : ''}<div class="stp-velvet-post-meta"><span><i class="fa-solid fa-heart"></i> ${compact(Math.round(stats.subs * (0.3 + seeded(p.id) * 0.5)))}</span><span>${esc(ago(p.time))}</span></div></div>`).join('')}</div>`;
+        <div class="stp-velvet-grid">${me.posts.map(p => `<div class="stp-velvet-post stp-has-del">${deleteButton({ ...p, mine: true }, 'velvet-delete')}${photo(p, 'stp-photo-portrait', { adult: true })}${p.caption ? `<div class="stp-post-text">${fmt(p.caption)}</div>` : ''}<div class="stp-velvet-post-meta"><span><i class="fa-solid fa-heart"></i> ${compact(Math.round(stats.subs * (0.3 + seeded(p.id) * 0.5)))}</span><span>${esc(ago(p.time))}</span></div></div>`).join('')}</div>`;
 }
 
 export default {
@@ -238,6 +239,15 @@ export default {
             me.open = true;
             me.openedAtLen = (SillyTavern.getContext().chat ?? []).length;
             clearDrafts('velvet:price', 'velvet:bio');
+            saveState();
+            updateInjection();
+            changed();
+        },
+        'velvet-delete': async el => {
+            const me = velvet().me;
+            const p = me.posts.find(x => x.id === el.dataset.id);
+            if (!p || !await confirmDelete({ ...p, mine: true })) return;
+            me.posts = me.posts.filter(x => x !== p);
             saveState();
             updateInjection();
             changed();

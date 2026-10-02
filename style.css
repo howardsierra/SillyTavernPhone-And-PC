@@ -6113,3 +6113,34 @@
 #stp-device .stp-reset-card { display: flex; flex-direction: column; gap: 6px; }
 #stp-device .stp-reset-card .stp-btn { width: 100%; justify-content: center; }
 #stp-device .stp-reset-card .stp-btn + .stp-muted { margin-bottom: 8px; }
+
+/* Deleting posts */
+#stp-device .stp-post-x,
+#stp-device .stp-post-reddit,
+#stp-device .stp-has-del { position: relative; }
+
+#stp-device .stp-post-del {
+    width: 28px;
+    height: 28px;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--muted);
+    font-size: 12.5px;
+    cursor: pointer;
+    opacity: 0.55;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+
+#stp-device .stp-post-del:hover { opacity: 1; color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+#stp-device .stp-post-x > .stp-post-del,
+#stp-device .stp-post-reddit > .stp-post-del { position: absolute; top: 8px; right: 0; }
+#stp-device .stp-has-del > .stp-post-del { position: absolute; top: 8px; right: 8px; z-index: 2; background: rgba(0, 0, 0, 0.45); color: #fff; opacity: 0.85; }
+#stp-device .stp-rated-head .stp-post-del { align-self: flex-start; }
+#stp-device .stp-tg-meta .stp-post-del { width: 22px; height: 22px; margin-right: auto; font-size: 11px; }
+#stp-device .stp-post-x .stp-post-head { padding-right: 26px; }

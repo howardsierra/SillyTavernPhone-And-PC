@@ -1,6 +1,7 @@
 // "Rated" — an anonymous 18+ app where adults post photos of themselves to be rated.
 // Hidden unless "Adult (18+) apps" is enabled in the settings.
 import { changed, isUser, liveItems, nextId, people, queueItem, saveState, settings, state } from '../core.js';
+import { deleteButton } from '../deletions.js';
 import { ratedStats } from '../derived.js';
 import { isBusy, runJson } from '../gen.js';
 import { autoImages, generateImage } from '../images.js';
@@ -62,6 +63,7 @@ function postCard(it) {
             <span class="stp-anon-avatar" style="background:${gradientFor(handle)}"><i class="fa-solid fa-user-secret"></i></span>
             <div class="stp-row-main"><b>${esc(handle)}</b>${it.age ? ` <span class="stp-muted">· ${esc(it.age)}</span>` : ''}<div class="stp-row-sub">${pending ? 'queued' : esc(ago(it.time))}${mine ? ' · you' : ''}</div></div>
             <div class="stp-rated-score">${pending ? '—' : stats.rating.toFixed(1)}<small>${pending ? 'not live yet' : `${compact(stats.votes)} votes`}</small></div>
+            ${mine ? deleteButton(it) : ''}
         </div>
         ${secret ? `<div class="stp-rated-secret">${reveal ? `<i class="fa-solid fa-eye"></i> Secretly posted by <b>${esc(it.secretlyBy)}</b>` : '<i class="fa-solid fa-eye"></i> Something about this one looks… familiar.'}</div>` : ''}
         ${photo(it, 'stp-photo-portrait', { adult: true })}

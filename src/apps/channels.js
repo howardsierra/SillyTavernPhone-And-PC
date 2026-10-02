@@ -1,5 +1,6 @@
 // Channels — Telegram-style broadcast channels, including an anonymous confessions
 // channel where {{user}} can post secretly or pay to find out who wrote something.
+import { confirmDelete, deleteButton, rememberDeleted } from '../deletions.js';
 import { balance, changed, ctx, money, nextId, people, saveState, settings, state, userName } from '../core.js';
 import { isBusy, runJson } from '../gen.js';
 import { autoImages } from '../images.js';
@@ -104,7 +105,7 @@ function postCard(channel, p) {
         ${channel.anonymous ? `<div class="stp-tg-anon">${p.mine ? '🤫 Your confession' : showAuthor ? `<i class="fa-solid fa-user-secret"></i> Written by <b>${esc(author)}</b>` : '<i class="fa-solid fa-user-secret"></i> Anonymous'}</div>` : ''}
         ${p.image ? photo(p, 'stp-photo-wide') : ''}
         <div class="stp-tg-text">${fmt(p.text)}</div>
-        <div class="stp-tg-meta"><span><i class="fa-solid fa-eye"></i> ${compact(p.mine ? Math.min(channel.subscribers, Math.round(3 + channel.subscribers * 0.05 * (1 + (Date.now() - p.time) / 3.6e6))) : p.views)}</span><span>${esc(ago(p.time))}</span></div>
+        <div class="stp-tg-meta">${p.mine ? deleteButton(p, 'tg-delete') : ''}<span><i class="fa-solid fa-eye"></i> ${compact(p.mine ? Math.min(channel.subscribers, Math.round(3 + channel.subscribers * 0.05 * (1 + (Date.now() - p.time) / 3.6e6))) : p.views)}</span><span>${esc(ago(p.time))}</span></div>
         <div class="stp-tg-reactions">
             ${chips.map(([e, n]) => `<button class="stp-tg-react ${p.myReaction === e ? 'stp-active' : ''}" data-act="tg-react" data-id="${esc(p.id)}" data-emoji="${e}">${e} ${compact(n)}</button>`).join('')}
             <button class="stp-tg-react stp-tg-add" data-act="tg-react-open" data-id="${esc(p.id)}" title="React"><i class="fa-regular fa-face-smile"></i></button>
@@ -207,6 +208,16 @@ export default {
             payFrom(`${c.name} admins`, price, '🔍 Confession reveal');
             tg().reveals = (tg().reveals || 0) + 1;
             p.revealed = p.secretlyBy || FAKE_NAMES[Math.floor(seeded(p.id) * FAKE_NAMES.length)];
+            saveState();
+            updateInjection();
+            changed();
+        },
+        'tg-delete': async el => {
+            const c = channelById(ui.params.id);
+            const p = c?.posts.find(x => x.id === el.dataset.id && x.mine);
+            if (!p || !await confirmDelete(p)) return;
+            c.posts = c.posts.filter(x => x !== p);
+            rememberDeleted('channels', `${c.name} confession: ${p.text}`);
             saveState();
             updateInjection();
             changed();

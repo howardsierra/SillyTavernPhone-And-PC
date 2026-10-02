@@ -18,7 +18,7 @@ An immersion extension that gives `{{user}}` an in-story **phone** (or **PC**). 
 | --- | --- |
 | 💬 **Messages** | Text anyone and get replies right away. Group chats, photos, voice messages, emoji reactions, read receipts, and the occasional spam or scam text from an unknown number. ↩ quotes a text into your chat reply. |
 | 📞 **Phone** | Recent calls, missed calls, voicemail transcripts, contacts. Calling someone connects with your next reply. |
-| 𝕏 **X**, 📸 **Instagram**, 👽 **Reddit** | **Feed**: your home timeline (story characters mixed with everyone else), with refresh and load more. **Profiles**: peek at anyone's whole profile feed, then load older posts. Tap a name to open their profile. Post as yourself: the post goes up right away and people start commenting, with a notification when they do. **Tap any post to open its comments**, then reply to the post or to a specific comment. People answer right away, the poster included, and story characters stay in character and remember the exchange. |
+| 𝕏 **X**, 📸 **Instagram**, 👽 **Reddit** | **Feed**: your home timeline (story characters mixed with everyone else), with refresh and load more. **Profiles**: peek at anyone's whole profile feed, then load older posts. Tap a name to open their profile. Post as yourself: the post goes up right away and people start commenting, with a notification when they do. Tap 🗑 on any post to delete it (yours) or remove it from your feed (someone else's). **Tap any post to open its comments**, then reply to the post or to a specific comment. People answer right away, the poster included, and story characters stay in character and remember the exchange. |
 | 🎮 **Chord** | Discord-style servers you're in: friend groups, local communities, fandoms. Server rail, channels, member list. Open a channel to read the chatter, catch up (⏩), or post. Members answer right away, story characters among them, and what's said is remembered in the prompt. |
 | ✈️ **Channels** | Telegram-style broadcast channels: local news, gossip, memes, and an **anonymous confessions** channel. React with emoji, load older posts, confess anonymously yourself, or pay (from Pocket, getting pricier each time) to find out who wrote a confession. A character might be behind one. |
 | 📺 **Live** | Twitch-style streams, sometimes by people from your story. Watch, chat, and donate from Pocket. The streamer reads your messages. |
@@ -191,6 +191,13 @@ Custom prompts can place this anywhere with `{{context}}`. If they leave it out,
 ## Credits
 
 Instant replies with the chat as memory, group texts, reactions, voice messages, the lock screen, skins, streams, news, plans and spam texts were inspired by [Phone-ST](https://github.com/Delidgi-meow/Phone-ST) by Delidgi. All the code here is our own.
+
+## Deleting posts
+
+Every post on X, Instagram and Reddit has a 🗑 button, in the feed and on the open post. Your own Rated posts, Velvet posts and anonymous confessions have one too.
+
+- **Your posts** are deleted after a confirmation. For a while afterwards, the story knows you took the post down, so people may have seen it.
+- **Someone else's posts** are just removed from your feed.
 
 ## Resetting
 
