@@ -1,4 +1,4 @@
-import { changed, isUser, liveItems, people, queueItem, settings, state, userName } from '../core.js';
+import { avatarUrl, changed, isUser, liveItems, people, queueItem, settings, state, userName } from '../core.js';
 import { generateImage } from '../images.js';
 import { avatar, button, empty, header, input, moreButton, peekButton, peekNote, personChips, photo, queuedBadge, shimmerCards, tabs, textarea } from '../ui/kit.js';
 import { generateFeed, isBusy, peekApp } from '../gen.js';
@@ -100,6 +100,13 @@ function composer(app) {
     </div>`;
 }
 
+/** Profile header: a blurred, zoomed version of their picture, or a colour wash if they have none. */
+function coverHtml(name, app) {
+    const url = avatarUrl(name);
+    const tint = app === 'x' ? gradientFor(`${name}x`) : META[app].color;
+    return `<div class="stp-profile-cover ${url ? 'stp-has-photo' : ''}" style="--cover:${tint}${url ? `;--cover-img:url('${esc(url).replace(/'/g, '%27')}')` : ''}"></div>`;
+}
+
 function profileView(app, list) {
     const meta = META[app];
     const name = pickPerson(list, true);
@@ -112,7 +119,7 @@ function profileView(app, list) {
     const bio = profile.bio?.[app] ?? '';
     const busy = isBusy(`peek:${app}:${norm(name ?? '')}`);
     const card = name ? `<div class="stp-profile stp-profile-${app}">
-            <div class="stp-profile-cover" style="--cover:${app === 'x' ? gradientFor(`${name}x`) : meta.color}"></div>
+            ${coverHtml(name, app)}
             <div class="stp-profile-row">${avatar(name, 'xl', 'stp-profile-avatar')}<div class="stp-ml-auto">${peekButton(name, { label: true, app })}</div></div>
             <div class="stp-profile-name">${esc(you ? userName() : name)}</div>
             ${handle ? `<div class="stp-muted">${esc(handle)}</div>` : ''}

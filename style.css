@@ -2041,23 +2041,45 @@
 }
 
 #stp-device .stp-profile-cover {
-    height: 84px;
+    position: relative;
+    height: 96px;
     margin: 0 -4px;
     border-radius: 18px;
+    overflow: hidden;
     background: var(--cover);
-    opacity: 0.9;
 }
 
+/* With a picture: their own photo, blurred and zoomed, with a soft fade at the bottom */
+#stp-device .stp-profile-cover.stp-has-photo::before {
+    content: "";
+    position: absolute;
+    inset: -20px;
+    background: var(--cover-img) center / cover no-repeat;
+    filter: blur(16px) saturate(1.35) brightness(0.85);
+    transform: scale(1.15);
+}
+
+#stp-device .stp-profile-cover.stp-has-photo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.35));
+}
+
+/* The avatar always sits on top of the header */
 #stp-device .stp-profile-row {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: flex-end;
-    margin-top: -38px;
-    padding: 0 6px;
+    margin-top: -42px;
+    padding: 0 8px;
 }
 
 #stp-device .stp-profile-avatar {
     border: 4px solid var(--bg);
     box-sizing: content-box !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 #stp-device .stp-profile-name {
