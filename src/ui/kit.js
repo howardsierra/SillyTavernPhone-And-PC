@@ -61,20 +61,40 @@ export function sectionLabel(text, extra = '') {
     return `<div class="stp-section-label"><span>${esc(text)}</span>${extra}</div>`;
 }
 
-export function peekButton(name, { label = false } = {}) {
+/** Peek button for one app on someone's phone ('life' = money, orders, location, dating). */
+export function peekButton(name, { label = false, app = 'life' } = {}) {
     if (!name || isUser(name)) return '';
-    const busy = isBusy(`peek:${norm(name)}`);
+    const busy = isBusy(`peek:${app}:${norm(name)}`);
+    const attrs = `data-act="peek" data-app="${esc(app)}" data-name="${esc(name)}" ${busy ? 'disabled' : ''}`;
     if (label) {
-        return `<button class="stp-btn stp-btn-soft stp-btn-sm ${busy ? 'stp-spin' : ''}" data-act="peek" data-name="${esc(name)}" ${busy ? 'disabled' : ''}><i class="fa-solid fa-arrows-rotate"></i><span>${busy ? 'Peeking…' : 'Peek'}</span></button>`;
+        return `<button class="stp-btn stp-btn-soft stp-btn-sm ${busy ? 'stp-spin' : ''}" ${attrs}><i class="fa-solid fa-arrows-rotate"></i><span>${busy ? 'Peeking…' : 'Peek'}</span></button>`;
     }
-    return `<button class="stp-icon-btn ${busy ? 'stp-spin' : ''}" data-act="peek" data-name="${esc(name)}" title="Peek into ${esc(name)}'s phone" ${busy ? 'disabled' : ''}><i class="fa-solid fa-arrows-rotate"></i></button>`;
+    return `<button class="stp-icon-btn ${busy ? 'stp-spin' : ''}" title="Peek into ${esc(name)}'s phone" ${attrs}><i class="fa-solid fa-arrows-rotate"></i></button>`;
 }
 
-export function peekNote(name, profile) {
-    if (isBusy(`peek:${norm(name)}`)) return `<div class="stp-peek-note stp-shimmer">Peeking at ${esc(name)}'s phone…</div>`;
-    if (!profile?.generatedAt) return '';
-    const when = ago(profile.generatedAt);
+export function peekNote(name, profile, app = 'life') {
+    if (isBusy(`peek:${app}:${norm(name)}`)) return `<div class="stp-peek-note stp-shimmer">Peeking at ${esc(name)}'s phone…</div>`;
+    const at = profile?.peeked?.[app] ?? (app === 'life' ? profile?.generatedAt : null);
+    if (!at) return '';
+    const when = ago(at);
     return `<div class="stp-peek-note">Peeked ${when === 'now' ? 'just now' : `${esc(when)} ago`}</div>`;
+}
+
+/** A row of people to peek at (money, orders, location, dating). */
+export function peekChips(list, label) {
+    if (!list.length) return '';
+    return `<div class="stp-section-label"><span>${esc(label)}</span></div>
+        <div class="stp-chips">${list.map(n => {
+        const busy = isBusy(`peek:life:${norm(n)}`);
+        return `<button class="stp-chip ${busy ? 'stp-spin' : ''}" data-act="peek" data-app="life" data-name="${esc(n)}" ${busy ? 'disabled' : ''}>${avatar(n, 'xs')}<span>${esc(n)}</span><i class="fa-solid fa-arrows-rotate stp-chip-icon"></i></button>`;
+    }).join('')}</div>`;
+}
+
+/** "Load more" at the bottom of a feed. */
+export function moreButton(act, busy, label = 'Load more', attrs = '') {
+    return `<div class="stp-more"><button class="stp-btn stp-btn-soft stp-btn-sm ${busy ? 'stp-spin' : ''}" data-act="${act}" ${attrs} ${busy ? 'disabled' : ''}>
+        <i class="fa-solid ${busy ? 'fa-arrows-rotate' : 'fa-chevron-down'}"></i><span>${busy ? 'Loading…' : esc(label)}</span>
+    </button></div>`;
 }
 
 export function shimmerCards(n = 3) {

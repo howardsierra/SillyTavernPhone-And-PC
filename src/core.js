@@ -16,6 +16,7 @@ export const defaultSettings = {
     wallpaper: 'aurora',
     customWallpaper: '',
     notify: true,
+    focusPhoneOnly: true,
     chatMarker: 'short',
     injectInstructions: true,
     injectTexts: true,
@@ -249,7 +250,7 @@ export function pendingItems() {
 export function commitPending() {
     const st = state();
     const pending = pendingItems();
-    if (!pending.length) return false;
+    if (!pending.length) return [];
     const chat = ctx().chat ?? [];
     const lastId = chat.length - 1;
     const anchor = lastId >= 0 && chat[lastId]?.is_user ? makeAnchor(lastId) : null;
@@ -264,7 +265,7 @@ export function commitPending() {
         it.anchor = anchor ? { ...anchor } : null;
     });
     saveState();
-    return true;
+    return pending;
 }
 
 export function isJustSent(item) {
@@ -332,6 +333,7 @@ export function people() {
     Object.keys(st.profiles).forEach(add);
     for (const it of liveItems()) {
         if (it.kind === 'post' && it.app === 'rated') continue;
+        if (it.stranger) continue;
         if (it.kind === 'sms' && it.app === 'spark') continue;
         if (it.kind === 'sms' || it.kind === 'call') add(it.contact);
         else if (it.kind === 'pay') {

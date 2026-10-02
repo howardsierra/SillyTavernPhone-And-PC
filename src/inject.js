@@ -88,7 +88,7 @@ export function updateInjection() {
     }
 
     if (s.injectPosts) {
-        const posts = items.filter(x => x.kind === 'post' && x.app !== 'rated').sort(byTime).slice(-Math.max(1, Number(s.maxPosts) || 4));
+        const posts = items.filter(x => x.kind === 'post' && x.app !== 'rated' && !x.stranger).sort(byTime).slice(-Math.max(1, Number(s.maxPosts) || 4));
         if (posts.length) {
             const lines = posts.map(p => {
                 const where = p.app === 'reddit' ? `Reddit${p.sub ? ` ${p.sub}` : ''}` : APP_NAMES[p.app];
@@ -129,6 +129,12 @@ export function updateInjection() {
         if (searches.length) {
             parts.push(`[Private web searches — only the searcher knows about these]\n${searches.map(x => `${x.from} searched: ${x.text}`).join('\n')}`);
         }
+    }
+
+    // Phone-only roleplay: goes last so it sits closest to the reply.
+    if (state().phoneOnly && !quiet) {
+        const only = promptText('phoneOnly');
+        if (only.trim()) parts.push(sub(only));
     }
 
     c.setExtensionPrompt(PROMPT_KEY, parts.join('\n\n'), 1, Number(s.depth) || 0, false, Number(s.role) || 0);

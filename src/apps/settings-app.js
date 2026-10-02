@@ -2,6 +2,7 @@ import { changed, ctx, META_KEY, money, saveSettings, saveState, settings, state
 import { imageAvailable, imageProviders } from '../images.js';
 import { updateInjection } from '../inject.js';
 import { header, input, sectionLabel } from '../ui/kit.js';
+import { modeCard } from './messages.js';
 import { draft, navigate, ui } from '../ui/state.js';
 import { WALLPAPERS, wallpaperCss } from '../ui/theme.js';
 import { esc, toMoney } from '../util.js';
@@ -55,6 +56,8 @@ export default {
                     ${toggleRow('notify', 'Notifications', 'Pop-ups outside the phone')}
                 </div>
                 ${sectionLabel('This chat')}
+                <div class="stp-card stp-list-card">${modeCard()}</div>
+                <div class="stp-card stp-list-card">${toggleRow('focusPhoneOnly', 'Centre the device in phone-only mode', 'Dims the chat behind it')}</div>
                 <div class="stp-card"><button class="stp-btn stp-btn-danger" data-act="wipe"><i class="fa-regular fa-trash-can"></i><span>Clear phone data for this chat</span></button></div>
                 <div class="stp-muted stp-small stp-pad stp-center">More options: SillyTavern → Extensions → Phone &amp; PC</div>
             </div>`;

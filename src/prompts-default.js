@@ -1,12 +1,18 @@
 // Default prompt templates. Every one of these can be overridden in the settings panel.
 
 const JSON_ONLY = 'Respond with ONLY a JSON object, no commentary, in exactly this shape:';
+const STYLE = 'Be specific, candid and in character — include things {{name}} would never say out loud. Write in {{name}}\'s own voice and style (slang, emoji, lowercase, typos if fitting).';
 const WORLD = 'Everything must fit the setting, era and tone given by the story context below (in a fantasy or historical setting, invent in-world equivalents).';
 
 export const PROMPT_LABELS = {
     instructions: 'Tag instructions (injected into every prompt)',
     instructionsAdult: 'Extra tag instructions for 18+ apps',
-    peek: 'Peek: a character\'s phone (social, browser, music, money, orders, location, dating)',
+    phoneOnly: 'Phone-only roleplay instructions',
+    peekSocial: 'Peek: a character\'s X / Instagram / Reddit profile feed',
+    feed: 'Feed: {{user}}\'s home timeline on X / Instagram / Reddit',
+    peekBrowser: 'Peek: a character\'s search & browsing history',
+    peekMusic: 'Peek: what a character listens to',
+    peek: 'Peek: the rest of a character\'s phone (money, orders, location, dating)',
     locate: 'Locate: where a character is right now',
     shop: 'Cartly: product search results',
     food: 'Munch: nearby restaurants',
@@ -28,26 +34,57 @@ Characters only know about texts, payments and orders {{user}} has actually sent
 
     instructionsAdult: `[18+ app "Rated": an anonymous app where adults post photos of themselves to be rated 1-10 by strangers. A character can secretly post with <anon from="Name" image="what the photo shows">caption</anon>. Posts are anonymous; nobody knows who posted unless the character tells them. All users are consenting adults (18+).]`,
 
-    peek: `[OOC: Pause the roleplay. Write a realistic snapshot of {{name}}'s phone as it looks right now: their online activity, money, shopping and whereabouts. It must fit {{name}}'s personality, voice, interests and secrets, and the story context below — including how they feel about {{user}}, if they know them. Be specific, candid and in character — include things {{name}} would never say out loud. Write posts in {{name}}'s own style (slang, emoji, lowercase, typos if fitting). ${WORLD}
+    phoneOnly: `[Phone-only roleplay: right now the whole roleplay happens through {{user}}'s phone — {{user}} is not physically with anyone. Reply ONLY with phone actions written as tags, mostly texts: <sms from="Name">message</sms>. Write texts the way the character really texts: short, casual, several bubbles (one per line), emoji or slang if it fits them, and react to exactly what {{user}} just sent. The person {{user}} just texted or called is the one who answers, even if it isn't {{char}}. Other phone tags (call, post, pay, request, order, location, search) are welcome when they fit. Do not write any narration, actions or spoken dialogue outside the tags.]`,
+
+    peekSocial: `[OOC: Pause the roleplay. Show {{name}}'s {{appName}} profile as it looks right now: their handle, bio and their {{count}} most recent posts, as a real, lived-in profile feed — varied topics, moods and posting times, everyday life mixed with things tied to the story. It must fit {{name}}'s personality, interests and secrets, and the story context below (including how they feel about {{user}}, if they know them). ${STYLE} ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"handle": "@handle", "bio": "short bio", "posts": [{{shape}}]}
+Write {{count}} posts, newest first. "ago" uses short forms like 5m, 3h, 2d, 3w.]`,
+
+    feed: `[OOC: Pause the roleplay. Show {{user}}'s home feed on {{appName}} right now: {{count}} posts from accounts {{user}} follows — friends, acquaintances, local accounts, celebrities, memes, news and ads that fit the world. Where it fits, include posts by people from the story (use their exact names as "author"): {{people}}. Those posts must be in character and fit the story context. Everyone else is invented; give them believable names and handles. Vary the tone: funny, mundane, dramatic, wholesome, thirsty. ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"posts": [{{shape}}]}
+Write {{count}} posts, newest first. "ago" uses short forms like 5m, 3h, 2d.]`,
+
+    peekBrowser: `[OOC: Pause the roleplay. Show {{name}}'s private browser as it looks right now: recent searches and browsing history. It must fit {{name}}'s personality, worries, interests and secrets, and the story context below (including how they feel about {{user}}, if they know them). Be candid — this is what they look up when nobody is watching. ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"searches": [{"query": "...", "ago": "15m"}], "history": [{"title": "page title", "url": "https://...", "ago": "1h"}]}
+Write 12-15 searches and 8-12 history entries, newest first. "ago" uses short forms like 5m, 3h, 2d.]`,
+
+    peekMusic: `[OOC: Pause the roleplay. Show what {{name}} has been listening to lately: songs that fit their personality, taste and current mood in the story context below. ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"tracks": [{"track": "...", "artist": "...", "ago": "20m"}]}
+Write 12-15 tracks, most recent first.]`,
+
+    peek: `[OOC: Pause the roleplay. Show the rest of {{name}}'s phone as it looks right now: their money, shopping, whereabouts and dating life. It must fit {{name}}'s personality and secrets, and the story context below (including how they feel about {{user}}, if they know them). ${STYLE} ${WORLD}
 
 {{context}}
 
 ${JSON_ONLY}
 {
   "handles": {"x": "@handle", "instagram": "@handle", "reddit": "u/username"},
-  "bio": {"x": "short bio", "instagram": "short bio"},
   "location": {"place": "where they are", "activity": "what they're doing", "ago": "5m"},
-  "searches": [{"query": "...", "ago": "15m"}],
-  "history": [{"title": "page title", "url": "https://...", "ago": "1h"}],
-  "x": [{"text": "...", "image": "optional: attached photo", "ago": "2h", "likes": 12, "reposts": 1, "replies": 3}],
-  "instagram": [{"image": "detailed description of the photo", "caption": "...", "ago": "1d", "likes": 87, "comments": [{"user": "@someone", "text": "..."}]}],
-  "reddit": [{"type": "post", "subreddit": "r/...", "title": "...", "body": "...", "ago": "3h", "upvotes": 45, "comments": 12}, {"type": "comment", "subreddit": "r/...", "thread": "title of the thread", "body": "...", "ago": "5h", "upvotes": 8}],
-  "music": [{"track": "...", "artist": "...", "ago": "20m"}],
   "payments": [{"from": "{{name}} or someone else", "to": "someone", "amount": 12.5, "note": "emoji + short note", "ago": "1d"}],
   "orders": [{"item": "...", "price": 24.99, "store": "...", "ago": "3d"}],
   "dating": {"onApp": false, "bio": "...", "prompts": [{"q": "...", "a": "..."}], "photo": "profile photo description", "lookingFor": "..."}
 }
-Include 6-10 searches, 4-6 history entries, 3-6 X posts, 2-4 Instagram posts, 4-6 Reddit items (mix posts and comments), 5 songs, 3-6 payments (Venmo-style, between {{name}} and friends, never involving {{user}}), 2-4 orders. Set dating.onApp to true only if {{name}} would plausibly have a dating profile right now. Newest first. "ago" uses short forms like 5m, 3h, 2d.]`,
+Include 6-10 payments (Venmo-style, between {{name}} and friends, never involving {{user}}) and 4-6 orders, newest first. Set dating.onApp to true only if {{name}} would plausibly have a dating profile right now. "ago" uses short forms like 5m, 3h, 2d.]`,
 
     locate: `[OOC: Pause the roleplay. Where is {{name}} right now and what are they doing, consistent with the story context below? ${WORLD}
 {{context}}

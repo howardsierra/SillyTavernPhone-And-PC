@@ -10,12 +10,25 @@ import { processMessage, scanChat } from './parse.js';
 import { createSettingsPanel, syncSettingsUi } from './settings-panel.js';
 import { applyDevicePosition, close, createDom, open, toggle } from './ui/shell.js';
 import { navigate, resetUi, ui } from './ui/state.js';
-import { norm } from './util.js';
+import { currentContact, isPhoneOnly, setPhoneOnly } from './turn.js';
+import { norm, sameName } from './util.js';
 
 function onChatChanged() {
     resetUi();
+    ui.typing = null;
     if (hasChat()) scanChat();
     updateInjection();
+    // Phone-only chats open straight into the conversation.
+    if (hasChat() && isPhoneOnly() && settings().enabled) {
+        const c = currentContact();
+        if (c) navigate(c.app, 'thread', { contact: c.contact });
+    }
+    changed();
+}
+
+function stopTyping() {
+    if (!ui.typing) return;
+    ui.typing = null;
     changed();
 }
 
@@ -24,6 +37,7 @@ function onMessage(mesId, { notify = true, reanchorAfter = true } = {}) {
     const id = Number(mesId);
     if (!Number.isInteger(id)) return;
     const added = processMessage(id);
+    if (added.some(x => x.kind === 'sms' && ui.view === 'thread' && sameName(x.contact, ui.params.contact))) ui.scrollBottom = true;
     if (reanchorAfter) reanchor(id);
     if (added.length) {
         adoptChatImage(id, added);
@@ -41,7 +55,11 @@ function onMessage(mesId, { notify = true, reanchorAfter = true } = {}) {
 globalThis.stPhoneGenerateInterceptor = async function (_chat, _contextSize, _abort, type) {
     try {
         if (!settings().enabled || !hasChat()) return;
-        if (!type || type === 'normal') commitPending();
+        const committed = !type || type === 'normal' ? commitPending() : [];
+        // Show "typing…" in the conversation that's waiting for an answer.
+        const lastText = [...committed].reverse().find(x => x.kind === 'sms' || x.kind === 'call');
+        if (lastText) ui.typing = { app: lastText.app ?? 'messages', contact: lastText.contact };
+        else if (isPhoneOnly() && !['quiet', 'impersonate'].includes(type)) ui.typing = currentContact();
         updateInjection();
         changed();
     } catch (e) {
@@ -54,7 +72,12 @@ function registerEvents() {
     const ev = c.eventTypes ?? c.event_types;
     const on = (name, fn) => name && c.eventSource.on(name, fn);
     on(ev.CHAT_CHANGED, onChatChanged);
-    on(ev.MESSAGE_RECEIVED, id => onMessage(id));
+    on(ev.MESSAGE_RECEIVED, id => {
+        ui.typing = null;
+        onMessage(id);
+    });
+    on(ev.GENERATION_ENDED, stopTyping);
+    on(ev.GENERATION_STOPPED, stopTyping);
     on(ev.CHARACTER_MESSAGE_RENDERED, id => onMessage(id));
     on(ev.MESSAGE_SENT, id => onMessage(id, { notify: false }));
     on(ev.MESSAGE_EDITED, id => onMessage(id));
@@ -76,10 +99,18 @@ function registerSlashCommand() {
     try {
         c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
             name: 'phone',
-            helpString: `Open, close or toggle the in-story phone, or jump to an app. Usage: /phone [open|close|toggle|pc|phone|${ALL_APPS.map(a => a.id).join('|')}]`,
+            helpString: `Open, close or toggle the in-story phone, jump to an app, or switch this chat to phone-only roleplay (only) and back (story). Usage: /phone [open|close|toggle|pc|phone|only|story|${ALL_APPS.map(a => a.id).join('|')}]`,
             callback: (_args, value) => {
                 const v = norm(value);
-                if (v === 'close') close();
+                if (v === 'only' || v === 'phone-only') {
+                    setPhoneOnly(true);
+                    updateInjection();
+                    const ct = currentContact();
+                    if (ct) navigate(ct.app, 'thread', { contact: ct.contact });
+                } else if (v === 'story' || v === 'exit') {
+                    setPhoneOnly(false);
+                    updateInjection();
+                } else if (v === 'close') close();
                 else if (v === 'pc' || v === 'phone') {
                     settings().mode = v;
                     applyDevicePosition();
@@ -98,7 +129,7 @@ function registerSlashCommand() {
 
 function exposeApi() {
     const api = {
-        version: '0.2.1',
+        version: '0.3.0',
         registerImageProvider: (id, label, fn) => {
             registerImageProvider(id, label, fn);
             syncSettingsUi();

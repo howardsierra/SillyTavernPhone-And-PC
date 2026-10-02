@@ -1,6 +1,6 @@
 import { balance, changed, isUser, liveItems, money, people, queueItem, saveState, settings, state, userName } from '../core.js';
 import { requestStatus } from '../derived.js';
-import { avatar, button, empty, header, input, sectionLabel, tabs } from '../ui/kit.js';
+import { avatar, button, empty, header, input, peekChips, sectionLabel, tabs } from '../ui/kit.js';
 import { clearDrafts, draft, navigate, ui } from '../ui/state.js';
 import { ago, esc, sameName, toMoney } from '../util.js';
 
@@ -70,7 +70,8 @@ function renderMain() {
                 <div class="stp-request-actions">${button('Pay', 'pay-request-pay', { small: true, attrs: `data-id="${esc(r.id)}"` })}${button('Decline', 'pay-request-decline', { small: true, variant: 'soft', attrs: `data-id="${esc(r.id)}"` })}</div>
             </div>`).join('')}` : ''}
             ${tabs([{ id: 'activity', label: 'You' }, { id: 'friends', label: 'Friends' }], tab)}
-            ${list.length ? `<div class="stp-list">${list.map(p => txRow(p, items)).join('')}</div>` : empty('fa-solid fa-money-bill-transfer', tab === 'friends' ? 'No public activity yet' : 'No payments yet', tab === 'friends' ? 'Peek at someone (in X, Browser…) to see their payments.' : 'Send or request money above.')}
+            ${list.length ? `<div class="stp-list">${list.map(p => txRow(p, items)).join('')}</div>` : empty('fa-solid fa-money-bill-transfer', tab === 'friends' ? 'No public activity yet' : 'No payments yet', tab === 'friends' ? 'Peek at someone below to see who they\'ve been paying.' : 'Send or request money above.')}
+            ${tab === 'friends' ? peekChips(people(), 'Peek at payments') : ''}
         </div>`;
 }
 

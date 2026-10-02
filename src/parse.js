@@ -1,5 +1,6 @@
 // Pulls phone tags out of chat messages, stores them and rewrites the message.
 import { ctx, isUser, makeAnchor, money, nextId, saveState, settings, state, userName } from './core.js';
+import { wrapPlainReply } from './turn.js';
 import { hashString, norm, str, toMoney } from './util.js';
 
 const TAGS = 'sms|text|call|post|anon|search|pay|request|order|location';
@@ -40,7 +41,8 @@ function oneLine(text) {
 }
 
 function marker(kind, d) {
-    const mode = settings().chatMarker;
+    // Phone-only roleplay reads like a transcript, so it always shows the full text.
+    const mode = state().phoneOnly ? 'full' : settings().chatMarker;
     if (mode === 'none') return '';
     const user = userName();
     const full = mode === 'full';
@@ -77,7 +79,9 @@ function marker(kind, d) {
 export function processMessage(mesId) {
     const c = ctx();
     const m = c.chat?.[mesId];
-    if (!m || m.is_system || typeof m.mes !== 'string' || !hasTags(m.mes)) return [];
+    if (!m || m.is_system || typeof m.mes !== 'string') return [];
+    wrapPlainReply(m, mesId);
+    if (!hasTags(m.mes)) return [];
 
     const user = userName();
     const speaker = m.is_user ? user : (m.name || c.name2);

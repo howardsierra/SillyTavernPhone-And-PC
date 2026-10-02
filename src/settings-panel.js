@@ -31,6 +31,7 @@ function html() {
             ${check('enabled', 'Enabled')}
             ${check('showLauncher', 'Show floating phone button')}
             ${check('notify', 'Pop-up notifications')}
+            ${check('focusPhoneOnly', 'Phone-only roleplay: centre the device and dim the chat')}
             ${row('Device', '<select class="text_pole" data-setting="mode"><option value="phone">Phone</option><option value="pc">PC</option></select>')}
             ${row('Theme', '<select class="text_pole" data-setting="theme"><option value="dark">Dark</option><option value="light">Light</option><option value="auto">Match system</option></select>')}
             ${row('Chat marker', `<select class="text_pole" data-setting="chatMarker">

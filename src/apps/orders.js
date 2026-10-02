@@ -1,7 +1,7 @@
 // Order card shared by Cartly and Munch.
-import { isUser, liveItems, money, userName } from '../core.js';
+import { isUser, liveItems, money, people, userName } from '../core.js';
 import { ORDER_STEPS, orderStep } from '../derived.js';
-import { avatar, empty, personChips, photo } from '../ui/kit.js';
+import { avatar, empty, peekChips, personChips, photo } from '../ui/kit.js';
 import { ui } from '../ui/state.js';
 import { ago, esc, sameName } from '../util.js';
 import { pickPerson } from './social.js';
@@ -47,5 +47,6 @@ export function ordersTab(app) {
         : items.filter(x => sameName(x.from, name)))
         .sort((a, b) => (b.status === 'pending') - (a.status === 'pending') || b.time - a.time);
     return `${others.length ? personChips(others, name, { includeYou: true }) : ''}
-        ${list.length ? list.map(orderCard).join('') : empty(app === 'food' ? 'fa-solid fa-bowl-food' : 'fa-solid fa-box-open', 'No orders yet', isUser(name) ? `Orders ${esc(userName())} places or receives show up here.` : '')}`;
+        ${list.length ? list.map(orderCard).join('') : empty(app === 'food' ? 'fa-solid fa-bowl-food' : 'fa-solid fa-box-open', 'No orders yet', isUser(name) ? `Orders ${esc(userName())} places or receives show up here.` : '')}
+        ${app === 'shop' ? peekChips(people(), 'Peek at someone\'s orders') : ''}`;
 }

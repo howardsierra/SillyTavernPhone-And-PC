@@ -1,5 +1,6 @@
 import { changed, ctx, liveItems, people, queueItem, saveState, state, userName } from '../core.js';
 import { autoImages } from '../images.js';
+import { isPhoneOnly, rememberContact, sendTurn } from '../turn.js';
 import { updateInjection } from '../inject.js';
 import { avatar, empty, header, iconBtn, input, photo, sectionLabel } from '../ui/kit.js';
 import { clearDrafts, draft, navigate, ui } from '../ui/state.js';
@@ -38,6 +39,7 @@ export function sendText(app, contact, now = false) {
     const text = draft(key);
     const image = ui.params.photoMode ? draft(`${key}:image`) : '';
     if (text || image) {
+        rememberContact(app, contact);
         const item = queueItem({ kind: 'sms', app, contact, text, image, dir: 'out' });
         clearDrafts(key, `${key}:image`);
         ui.params.photoMode = false;
@@ -45,12 +47,16 @@ export function sendText(app, contact, now = false) {
         if (image) autoImages([item]);
         changed();
     }
-    if (now) document.getElementById('send_but')?.click();
+    // Phone-only roleplay sends right away; otherwise ✈ sends the chat reply too.
+    if (isPhoneOnly()) sendTurn();
+    else if (now) document.getElementById('send_but')?.click();
 }
 
 export function queueCall(name) {
+    rememberContact('messages', name);
     queueItem({ kind: 'call', contact: name, dir: 'out', status: 'calling' });
-    toastr.info(`Your call to ${name} connects when you send your next chat message.`, '📞 Calling…', { timeOut: 4000 });
+    if (isPhoneOnly()) sendTurn();
+    else toastr.info(`Your call to ${name} connects when you send your next chat message.`, '📞 Calling…', { timeOut: 4000 });
 }
 
 function previewOf(it) {
@@ -81,10 +87,24 @@ function renderList() {
         </div>` : '';
     return `${header('Messages', { large: true, actions: iconBtn('fa-solid fa-pen-to-square', 'msg-new-toggle', 'New message') })}
         <div class="stp-scroll" data-scroll="messages">
+            ${modeCard()}
             ${newForm}
             ${list.length ? `<div class="stp-list">${threadRows(list, 'messages')}</div>` : empty('fa-regular fa-comments', 'No messages yet', `When someone texts ${esc(userName())}, it shows up here.`)}
             ${suggestions.length ? `${sectionLabel('Contacts')}<div class="stp-chips">${suggestions.map(n => `<button class="stp-chip" data-act="msg-open" data-app="messages" data-contact="${esc(n)}">${avatar(n, 'xs')}<span>${esc(n)}</span></button>`).join('')}</div>` : ''}
         </div>`;
+}
+
+/** Switch between telling the story in chat and roleplaying entirely through the phone. */
+export function modeCard() {
+    const on = isPhoneOnly();
+    return `<button class="stp-mode-card ${on ? 'stp-on' : ''}" data-act="phone-only-toggle">
+        <span class="stp-mode-icon"><i class="fa-solid ${on ? 'fa-mobile-screen-button' : 'fa-book-open'}"></i></span>
+        <span class="stp-row-main">
+            <span class="stp-row-title">${on ? 'Phone-only roleplay' : 'Roleplay through the phone'}</span>
+            <span class="stp-row-sub">${on ? 'Everything happens here — texts send right away' : 'Tell the whole story by text, from this device'}</span>
+        </span>
+        <span class="stp-switch ${on ? 'stp-on' : ''}"><i></i></span>
+    </button>`;
 }
 
 /** The conversation view, shared by Messages and Spark. */
@@ -133,23 +153,27 @@ export function renderThread(app, contact, { title = null, accent = '' } = {}) {
         </div>`;
     }).join('');
 
+    const typing = ui.typing && ui.typing.app === app && sameName(ui.typing.contact, contact)
+        ? `<div class="stp-msg stp-in"><div class="stp-typing" aria-label="${esc(contact)} is typing"><i></i><i></i><i></i></div></div>`
+        : '';
     const key = `thread:${app}:${norm(contact)}`;
     const photoMode = ui.params.photoMode;
+    const phoneOnly = isPhoneOnly();
     const head = title ?? `<span class="stp-thread-head">${avatar(contact, 'sm')}<span>${esc(contact)}</span></span>`;
     const actions = (app === 'messages' ? iconBtn('fa-solid fa-phone', 'msg-call', `Call ${contact}`, `data-contact="${esc(contact)}"`) : '')
         + iconBtn('fa-regular fa-trash-can', 'msg-delete-thread', 'Delete conversation', `data-app="${app}" data-contact="${esc(contact)}"`);
     return `${header(head, { actions })}
         <div class="stp-scroll stp-thread" data-scroll="${esc(key)}" ${accent ? `style="--bubble-out:${accent}"` : ''}>
-            ${rows || `<div class="stp-thread-intro">${avatar(contact, 'xl')}<div class="stp-thread-intro-name">${esc(contact)}</div><div class="stp-muted">Say hi 👋</div></div>`}
+            ${rows || typing ? '' : `<div class="stp-thread-intro">${avatar(contact, 'xl')}<div class="stp-thread-intro-name">${esc(contact)}</div><div class="stp-muted">Say hi 👋</div></div>`}${rows}${typing}
         </div>
         ${photoMode ? `<div class="stp-attach-bar"><i class="fa-solid fa-camera"></i>${input(`${key}:image`, 'Describe the photo you\'re sending…')}</div>` : ''}
         <div class="stp-composer" ${accent ? `style="--accent:${accent}"` : ''}>
             ${iconBtn('fa-solid fa-camera', 'msg-photo-toggle', 'Attach a photo', photoMode ? 'data-on="1"' : '')}
             <textarea class="stp-input stp-textarea stp-composer-input" rows="1" data-draft="${esc(key)}" data-send="${app}" data-contact="${esc(contact)}" placeholder="${photoMode ? 'Caption (optional)' : app === 'spark' ? 'Send a message' : 'iMessage'}">${esc(ui.drafts[key] ?? '')}</textarea>
-            <button class="stp-send" data-act="msg-send" data-app="${app}" data-contact="${esc(contact)}" title="Queue — delivered with your next chat reply"><i class="fa-solid fa-arrow-up"></i></button>
-            <button class="stp-send stp-send-now" data-act="msg-send-now" data-app="${app}" data-contact="${esc(contact)}" title="Queue and send your chat reply now (Ctrl+Enter)"><i class="fa-solid fa-paper-plane"></i></button>
+            <button class="stp-send" data-act="msg-send" data-app="${app}" data-contact="${esc(contact)}" title="${phoneOnly ? 'Send' : 'Queue — delivered with your next chat reply'}"><i class="fa-solid fa-arrow-up"></i></button>
+            ${phoneOnly ? '' : `<button class="stp-send stp-send-now" data-act="msg-send-now" data-app="${app}" data-contact="${esc(contact)}" title="Queue and send your chat reply now (Ctrl+Enter)"><i class="fa-solid fa-paper-plane"></i></button>`}
         </div>
-        <div class="stp-composer-hint">Delivered when you send your next chat message</div>`;
+        <div class="stp-composer-hint">${phoneOnly ? '<i class="fa-solid fa-mobile-screen-button"></i> Phone-only roleplay — sends right away' : 'Delivered when you send your next chat message'}</div>`;
 }
 
 function photoBubble(it) {

@@ -1,8 +1,9 @@
 import { changed, isUser, liveItems, people, queueItem, settings, state, userName } from '../core.js';
 import { generateImage } from '../images.js';
-import { avatar, empty, header, input, peekButton, peekNote, personChips, photo, queuedBadge, textarea } from '../ui/kit.js';
+import { avatar, button, empty, header, input, moreButton, peekButton, peekNote, personChips, photo, queuedBadge, shimmerCards, tabs, textarea } from '../ui/kit.js';
+import { generateFeed, isBusy, peekApp } from '../gen.js';
 import { clearDrafts, draft, ui } from '../ui/state.js';
-import { ago, compact, esc, fmt, gradientFor } from '../util.js';
+import { ago, compact, esc, fmt, gradientFor, norm } from '../util.js';
 
 const META = {
     x: { label: 'X', icon: 'fa-brands fa-x-twitter', color: 'linear-gradient(180deg, #2a2a2a, #000)' },
@@ -22,8 +23,14 @@ function handleOf(name, app) {
     return state().profiles[name]?.handles?.[app] ?? '';
 }
 
+/** Tapping a known person's name opens their profile. */
+function authorLink(it) {
+    if (it.stranger || isUser(it.from)) return '';
+    return `class="stp-author" data-act="open-profile" data-app="${esc(it.app)}" data-name="${esc(it.from)}"`;
+}
+
 export function renderPost(it) {
-    const handle = handleOf(it.from, it.app);
+    const handle = it.handle || handleOf(it.from, it.app);
     const when = it.status === 'pending' ? 'queued' : ago(it.time);
     const name = isUser(it.from) ? userName() : it.from;
 
@@ -31,7 +38,7 @@ export function renderPost(it) {
         return `<article class="stp-post stp-post-x">
             ${avatar(it.from, 'md')}
             <div class="stp-post-main">
-                <div class="stp-post-head"><b>${esc(name)}</b>${!isUser(it.from) ? ' <i class="fa-solid fa-circle-check stp-verified"></i>' : ''} <span class="stp-muted">${esc(handle)} · ${esc(when)}</span></div>
+                <div class="stp-post-head"><b ${authorLink(it)}>${esc(name)}</b>${!isUser(it.from) ? ' <i class="fa-solid fa-circle-check stp-verified"></i>' : ''} <span class="stp-muted">${esc(handle)} · ${esc(when)}</span></div>
                 ${it.text ? `<div class="stp-post-text">${fmt(it.text)}</div>` : ''}
                 ${it.image ? photo(it, 'stp-photo-wide') : ''}
                 <div class="stp-post-stats">
@@ -48,7 +55,7 @@ export function renderPost(it) {
     if (it.app === 'instagram') {
         const comments = (it.comments ?? []).map(cm => `<div class="stp-ig-comment"><b>${esc(cm.user)}</b> ${esc(cm.text)}</div>`).join('');
         return `<article class="stp-post stp-post-ig">
-            <div class="stp-post-head stp-ig-head"><span class="stp-ig-ring">${avatar(it.from, 'sm')}</span> <b>${esc(handle || name)}</b><i class="fa-solid fa-ellipsis stp-muted stp-ml-auto"></i></div>
+            <div class="stp-post-head stp-ig-head"><span class="stp-ig-ring">${avatar(it.from, 'sm')}</span> <b ${authorLink(it)}>${esc(handle || name)}</b><i class="fa-solid fa-ellipsis stp-muted stp-ml-auto"></i></div>
             ${photo({ ...it, image: it.image || 'a photo' }, 'stp-photo-square')}
             <div class="stp-ig-actions"><i class="fa-regular fa-heart"></i><i class="fa-regular fa-comment"></i><i class="fa-regular fa-paper-plane"></i><i class="fa-regular fa-bookmark stp-ml-auto"></i></div>
             <div class="stp-post-likes">${compact(it.likes)} likes</div>
@@ -93,6 +100,55 @@ function composer(app) {
     </div>`;
 }
 
+function profileView(app, list) {
+    const meta = META[app];
+    const name = pickPerson(list, true);
+    const you = isUser(name);
+    const profile = state().profiles[name] ?? {};
+    const posts = liveItems()
+        .filter(x => x.kind === 'post' && x.app === app && !x.stranger && (you ? isUser(x.from) : x.from === name))
+        .sort((a, b) => (b.status === 'pending') - (a.status === 'pending') || b.time - a.time);
+    const handle = profile.handles?.[app] ?? '';
+    const bio = profile.bio?.[app] ?? '';
+    const busy = isBusy(`peek:${app}:${norm(name ?? '')}`);
+    const card = name ? `<div class="stp-profile stp-profile-${app}">
+            <div class="stp-profile-cover" style="--cover:${app === 'x' ? gradientFor(`${name}x`) : meta.color}"></div>
+            <div class="stp-profile-row">${avatar(name, 'xl', 'stp-profile-avatar')}<div class="stp-ml-auto">${peekButton(name, { label: true, app })}</div></div>
+            <div class="stp-profile-name">${esc(you ? userName() : name)}</div>
+            ${handle ? `<div class="stp-muted">${esc(handle)}</div>` : ''}
+            ${bio ? `<div class="stp-profile-bio">${esc(bio)}</div>` : ''}
+            <div class="stp-profile-stats"><span><b>${posts.length}</b> posts</span>${you ? '' : `<span><b>${compact(Math.round(150 + (posts[0]?.likes ?? 40) * 9))}</b> followers</span>`}</div>
+            ${peekNote(name, profile, app)}
+        </div>` : '';
+    const none = you ? '' : busy ? shimmerCards(3) : empty(meta.icon, `Nothing from ${name ?? 'them'} yet`, `Tap <b>Peek</b> to load ${esc(name ?? 'their')}'s whole ${meta.label} feed.`);
+    const more = !you && posts.length ? moreButton('peek-more', busy, 'Load older posts', `data-app="${app}" data-name="${esc(name)}"`) : '';
+    return `${personChips(list, name, { includeYou: true })}
+        <div class="stp-scroll stp-feed stp-feed-${app}" data-scroll="profile:${app}:${esc(name ?? '')}">
+            ${card}
+            ${you ? composer(app) : ''}
+            ${posts.map(renderPost).join('') || none}
+            ${more}
+        </div>`;
+}
+
+function feedView(app) {
+    const meta = META[app];
+    const busy = isBusy(`feed:${app}`);
+    const posts = liveItems()
+        .filter(x => x.kind === 'post' && x.app === app)
+        .sort((a, b) => (b.status === 'pending') - (a.status === 'pending') || b.time - a.time);
+    const loaded = state().feeds?.[app];
+    const body = posts.length
+        ? `${posts.map(renderPost).join('')}${moreButton('feed-more', busy, 'Load more', `data-app="${app}"`)}`
+        : busy ? shimmerCards(4) : empty(meta.icon, 'Your feed is empty', 'See what everyone\'s posting — people from your story included.',
+            button('Load my feed', 'feed-refresh', { icon: 'fa-solid fa-arrows-rotate', attrs: `data-app="${app}"` }));
+    return `<div class="stp-scroll stp-feed stp-feed-${app}" data-scroll="feed:${app}">
+            ${composer(app)}
+            ${loaded && !busy ? `<div class="stp-peek-note">Updated ${ago(loaded) === 'now' ? 'just now' : `${esc(ago(loaded))} ago`}</div>` : busy && posts.length ? '<div class="stp-peek-note stp-shimmer">Refreshing your feed…</div>' : ''}
+            ${body}
+        </div>`;
+}
+
 function makeApp(app) {
     const meta = META[app];
     return {
@@ -102,33 +158,14 @@ function makeApp(app) {
         color: meta.color,
         group: 'Social',
         render() {
-            const list = people();
-            const name = pickPerson(list, true);
-            const you = isUser(name);
-            const profile = state().profiles[name] ?? {};
-            const posts = liveItems()
-                .filter(x => x.kind === 'post' && x.app === app && (you ? isUser(x.from) : x.from === name))
-                .sort((a, b) => (b.status === 'pending') - (a.status === 'pending') || b.time - a.time);
-            const handle = profile.handles?.[app] ?? '';
-            const bio = profile.bio?.[app] ?? '';
-            const count = posts.length;
-            const card = name ? `<div class="stp-profile stp-profile-${app}">
-                    <div class="stp-profile-cover" style="--cover:${app === 'x' ? gradientFor(`${name}x`) : META[app].color}"></div>
-                    <div class="stp-profile-row">${avatar(name, 'xl', 'stp-profile-avatar')}<div class="stp-ml-auto">${peekButton(name, { label: true })}</div></div>
-                    <div class="stp-profile-name">${esc(you ? userName() : name)}</div>
-                    ${handle ? `<div class="stp-muted">${esc(handle)}</div>` : ''}
-                    ${bio ? `<div class="stp-profile-bio">${esc(bio)}</div>` : ''}
-                    <div class="stp-profile-stats"><span><b>${count}</b> posts</span>${you ? '' : `<span><b>${compact(Math.round(150 + (posts[0]?.likes ?? 40) * 9))}</b> followers</span>`}</div>
-                    ${peekNote(name, profile)}
-                </div>` : '';
-            const none = you ? '' : empty(meta.icon, `Nothing from ${name ?? 'them'} yet`, `Tap <b>Peek</b> to see ${esc(name ?? 'their')}'s ${meta.label}.`);
-            return `${header(`<i class="${meta.icon}"></i> ${meta.label}`)}
-                ${personChips(list, name, { includeYou: true })}
-                <div class="stp-scroll stp-feed stp-feed-${app}" data-scroll="feed:${app}:${esc(name ?? '')}">
-                    ${card}
-                    ${you ? composer(app) : ''}
-                    ${posts.map(renderPost).join('') || none}
-                </div>`;
+            const tab = ui.params.tab ?? 'feed';
+            const busy = isBusy(`feed:${app}`);
+            const refresh = tab === 'feed'
+                ? `<button class="stp-icon-btn ${busy ? 'stp-spin' : ''}" data-act="feed-refresh" data-app="${app}" title="Refresh feed" ${busy ? 'disabled' : ''}><i class="fa-solid fa-arrows-rotate"></i></button>`
+                : '';
+            return `${header(`<i class="${meta.icon}"></i> ${meta.label}`, { actions: refresh })}
+                ${tabs([{ id: 'feed', label: app === 'reddit' ? 'Home' : 'Feed', icon: 'fa-solid fa-house' }, { id: 'profiles', label: 'Profiles', icon: 'fa-solid fa-user' }], tab)}
+                ${tab === 'feed' ? feedView(app) : profileView(app, people())}`;
         },
     };
 }
@@ -138,6 +175,13 @@ export const instagramApp = makeApp('instagram');
 export const redditApp = makeApp('reddit');
 
 export const socialActions = {
+    'open-profile': el => {
+        ui.params = { tab: 'profiles', person: el.dataset.name };
+        changed();
+    },
+    'peek-more': el => peekApp(el.dataset.name, el.dataset.app, { more: true }),
+    'feed-refresh': el => generateFeed(el.dataset.app),
+    'feed-more': el => generateFeed(el.dataset.app, { more: true }),
     post: el => {
         const app = el.dataset.app;
         const k = `post:${app}`;

@@ -13,6 +13,7 @@ export const ui = {
     scrollBottom: false,
     lastViewKey: '',
     revealed: {},
+    typing: null,
 };
 
 export function navigate(app, view = null, params = {}) {

@@ -1,5 +1,5 @@
-import { changed, isChatCharacter, nextId, saveState, state, userName } from '../core.js';
-import { isBusy, runJson } from '../gen.js';
+import { changed, chatCharacters, isChatCharacter, nextId, saveState, state, userName } from '../core.js';
+import { isBusy, peek, runJson } from '../gen.js';
 import { autoImages } from '../images.js';
 import { updateInjection } from '../inject.js';
 import { avatar, button, empty, header, input, photo, sectionLabel, shimmerCards, tabs, textarea } from '../ui/kit.js';
@@ -68,8 +68,10 @@ function renderDiscover() {
     const busy = isBusy('spark');
     if (busy) return shimmerCards(2);
     if (!d.length) {
-        return empty('fa-solid fa-fire', 'No one new around you', 'Find more people nearby. People from your story show up here when they\'re on Spark (Peek at them first).',
-            button('Find people nearby', 'spark-find', { icon: 'fa-solid fa-location-crosshairs' }));
+        const checking = chatCharacters().some(n => isBusy(`peek:life:${norm(n)}`));
+        return empty('fa-solid fa-fire', 'No one new around you', 'Find people nearby, or check whether anyone from your story is on Spark.',
+            `${button('Find people nearby', 'spark-find', { icon: 'fa-solid fa-location-crosshairs' })}
+            ${button(checking ? 'Checking…' : 'Is anyone I know on here?', 'spark-known', { variant: 'soft', icon: 'fa-solid fa-user-check', attrs: checking ? 'disabled' : '' })}`);
     }
     const [top, next] = d;
     return `<div class="stp-spark-stack">${next ? card(next, true) : ''}${card(top)}</div>
@@ -143,6 +145,11 @@ export default {
     },
     actions: {
         'spark-find': () => findPeople(),
+        'spark-known': async () => {
+            const names = chatCharacters();
+            for (const n of names) await peek(n);
+            if (!knownProfiles().length) toastr.info('Nobody you know seems to be on Spark… yet.', 'Spark');
+        },
         'spark-swipe': el => {
             const st = state();
             const { dir, id, name } = el.dataset;

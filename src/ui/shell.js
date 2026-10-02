@@ -3,8 +3,10 @@ import { allActions, appById, DOCK, visibleApps } from '../apps/index.js';
 import { sendText } from '../apps/messages.js';
 import { balance, changed, findById, hasChat, liveItems, money, onChange, pendingItems, saveSettings, saveState, settings, state, userName } from '../core.js';
 import { orderStepLabel, requestStatus } from '../derived.js';
-import { peek } from '../gen.js';
+import { peek, peekApp } from '../gen.js';
 import { generateImage, retakeImage } from '../images.js';
+import { updateInjection } from '../inject.js';
+import { currentContact, isPhoneOnly, sendTurn, setPhoneOnly } from '../turn.js';
 import { esc, norm } from '../util.js';
 import { empty, header } from './kit.js';
 import { navigate, ui } from './state.js';
@@ -109,6 +111,14 @@ function bannerHtml() {
     </button>`;
 }
 
+/** Phone-only: things queued outside a conversation (payments, orders…) go out from here. */
+function outboxBar() {
+    if (!hasChat() || !isPhoneOnly() || ui.view === 'thread') return '';
+    const n = pendingItems().length;
+    if (!n) return '';
+    return `<button class="stp-outbox-bar" data-act="send-turn"><i class="fa-solid fa-paper-plane"></i><span>Send ${n} queued ${n === 1 ? 'action' : 'actions'}</span></button>`;
+}
+
 function viewerHtml() {
     if (!ui.viewer) return '';
     const target = findById(ui.viewer);
@@ -163,6 +173,10 @@ export function render() {
     device.classList.toggle('stp-mode-phone', s.mode !== 'pc');
     device.classList.toggle('stp-theme-light', theme === 'light');
     device.style.setProperty('--stp-wallpaper', wallpaperCss(s));
+    // Phone-only roleplay puts the device centre stage over a dimmed chat.
+    const focus = ui.open && s.enabled && s.focusPhoneOnly && hasChat() && isPhoneOnly();
+    device.classList.toggle('stp-focus', focus);
+    document.getElementById('stp-backdrop')?.classList.toggle('stp-hidden', !focus);
     if (!ui.open || !s.enabled) return;
 
     // Preserve focus, caret and scroll across re-renders.
@@ -202,6 +216,7 @@ export function render() {
                 <nav class="stp-sidebar"><button class="stp-nav-item ${ui.app === 'home' ? 'stp-active' : ''}" data-act="home"><span class="stp-app-glyph stp-glyph-sm" style="--glyph:linear-gradient(160deg,#5e5ce6,#bf5af2)"><i class="fa-solid fa-house"></i></span><span class="stp-nav-label">Desktop</span></button>${nav}</nav>
                 <main class="stp-screen ${appClass}">
                     <div class="stp-view ${anim}">${view ?? desktopView()}</div>
+                    ${outboxBar()}
                     ${bannerHtml()}
                     ${viewerHtml()}
                 </main>
@@ -219,6 +234,7 @@ export function render() {
                     <button class="stp-close" data-act="close" title="Close phone" aria-label="Close phone"><i class="fa-solid fa-xmark"></i></button></span>
                 </div>
                 <div class="stp-view ${anim}">${view ?? homeView()}</div>
+                ${outboxBar()}
                 ${bannerHtml()}
                 ${viewerHtml()}
                 <div class="stp-homebar" data-act="home" title="Home"></div>
@@ -328,7 +344,7 @@ const GLOBAL_ACTIONS = {
         ui.params.person = el.dataset.name;
         changed();
     },
-    peek: el => peek(el.dataset.name),
+    peek: el => (el.dataset.app && el.dataset.app !== 'life' ? peekApp(el.dataset.name, el.dataset.app) : peek(el.dataset.name)),
     'gen-image': el => generateImage(el.dataset.id),
     'view-image': el => {
         ui.viewer = el.dataset.id;
@@ -368,6 +384,17 @@ const GLOBAL_ACTIONS = {
         applyDevicePosition();
         changed();
     },
+    'send-turn': () => sendTurn(),
+    'phone-only-toggle': () => {
+        const on = !isPhoneOnly();
+        setPhoneOnly(on);
+        updateInjection();
+        if (on) {
+            toastr.info('This chat now happens through the phone: texts send right away and characters answer by text.', '📱 Phone-only roleplay', { timeOut: 6000 });
+            const c = currentContact();
+            if (c) navigate(c.app, 'thread', { contact: c.contact });
+        }
+    },
     'banner-open': () => {
         const go = ui.banner?.go;
         ui.banner = null;
@@ -406,7 +433,7 @@ function makeDraggable(el, handleSelector, posKey, onClick) {
         const handle = e.target.closest(handleSelector);
         if (!handle || !el.contains(handle)) return;
         if (el.id !== 'stp-launcher' && e.target.closest('button, a, input, textarea, select')) return;
-        if (el.id === 'stp-device' && window.matchMedia('(max-width: 700px)').matches) return;
+        if (el.id === 'stp-device' && (window.matchMedia('(max-width: 700px)').matches || el.classList.contains('stp-focus'))) return;
         const p = point(e);
         const rect = el.getBoundingClientRect();
         start = { x: p.clientX, y: p.clientY, left: rect.left, top: rect.top, moved: false };
@@ -485,6 +512,11 @@ export function createDom() {
             toggle();
         }
     });
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'stp-backdrop';
+    backdrop.className = 'stp-hidden';
+    document.body.appendChild(backdrop);
 
     const device = document.createElement('div');
     device.id = 'stp-device';

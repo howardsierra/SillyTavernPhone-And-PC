@@ -3526,3 +3526,182 @@
     margin: 6px 0;
     opacity: 0.75;
 }
+
+/* ===================================================== feeds & phone-only */
+
+#stp-device .stp-more {
+    display: flex;
+    justify-content: center;
+    padding: 14px 0 6px;
+}
+
+#stp-device .stp-author {
+    cursor: pointer;
+}
+
+#stp-device .stp-author:hover {
+    text-decoration: underline;
+}
+
+#stp-device .stp-chip-icon {
+    font-size: 10px;
+    opacity: 0.6;
+    margin-left: 2px;
+}
+
+#stp-device .stp-chip.stp-spin .stp-chip-icon {
+    animation: stp-spin 0.9s linear infinite;
+    opacity: 1;
+}
+
+#stp-device .stp-feed > .stp-post-composer {
+    margin-top: 4px;
+}
+
+/* the switch between chat storytelling and phone-only roleplay */
+#stp-device .stp-mode-card {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 6px 0 10px;
+    padding: 12px 14px;
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    text-align: left;
+    transition: background 0.2s;
+}
+
+#stp-device .stp-list-card > .stp-mode-card {
+    margin: 0;
+    box-shadow: none;
+}
+
+#stp-device .stp-mode-card .stp-row-main {
+    display: flex;
+    flex-direction: column;
+}
+
+#stp-device .stp-mode-card .stp-row-sub {
+    white-space: normal;
+}
+
+#stp-device .stp-mode-icon {
+    width: 38px;
+    height: 38px;
+    flex: none;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+#stp-device .stp-mode-card.stp-on {
+    background:
+        radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 60%),
+        var(--surface);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+#stp-device .stp-mode-card.stp-on .stp-mode-icon {
+    color: #fff;
+    background: var(--accent);
+}
+
+/* typing… */
+#stp-device .stp-typing {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: 20px;
+    border-bottom-left-radius: 6px;
+    background: var(--bubble-in);
+    animation: stp-fade 0.25s ease;
+}
+
+#stp-device .stp-typing i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    animation: stp-typing 1.2s ease-in-out infinite;
+}
+
+#stp-device .stp-typing i:nth-child(2) { animation-delay: 0.15s; }
+#stp-device .stp-typing i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes stp-typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+    30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* phone-only: queued actions waiting to be sent */
+#stp-device .stp-outbox-bar {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 24px;
+    z-index: 24;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 13px 18px;
+    border-radius: 20px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 45%, transparent);
+    animation: stp-rise 0.35s ease;
+}
+
+#stp-device .stp-composer-hint .fa-mobile-screen-button {
+    color: var(--accent);
+}
+
+/* phone-only: the device takes centre stage */
+#stp-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9450;
+    background:
+        radial-gradient(60% 60% at 50% 50%, rgba(80, 60, 160, 0.25), transparent 70%),
+        rgba(6, 6, 12, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    animation: stp-fade 0.3s ease;
+}
+
+#stp-backdrop.stp-hidden {
+    display: none;
+}
+
+#stp-device.stp-focus {
+    left: 50% !important;
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%);
+}
+
+#stp-device.stp-focus .stp-statusbar,
+#stp-device.stp-focus .stp-titlebar {
+    cursor: default;
+}
+
+@media (max-width: 700px) {
+    #stp-device.stp-focus {
+        left: 0 !important;
+        top: 0 !important;
+        transform: none;
+    }
+}
+
+#stp-device .stp-mode-card .stp-row-title {
+    white-space: normal;
+}
