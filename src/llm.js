@@ -72,10 +72,42 @@ async function waitForChat(maxMs = 180e3) {
 export function llm(prompt, opts = {}) {
     const run = queue.then(async () => {
         await waitForChat();
-        return generate(prompt, opts);
+        try {
+            return await withRetries(() => generate(prompt, opts));
+        } finally {
+            // A short breather between requests, so bursts (Snoop, feeds…) don't trip rate limits.
+            await sleep(500);
+        }
     });
     queue = run.catch(() => {});
     return run;
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/** Errors worth another try: the API or a proxy in front of it hiccuped. */
+const TRANSIENT = /bad gateway|gateway|\b50[234]\b|\b429\b|\b52[0-4]\b|time ?out|timed out|fetch failed|network|econnreset|socket|overloaded|unavailable|too many requests|rate.?limit|capacity/i;
+
+/**
+ * Retries transient failures (502 Bad Gateway, 503, 504, 429, timeouts, empty
+ * answers) with a growing pause, then explains where the error comes from.
+ */
+async function withRetries(fn, tries = 3) {
+    let last = null;
+    for (let i = 0; i < tries; i++) {
+        if (i > 0) await sleep(2000 * 2 ** (i - 1));
+        try {
+            const out = await fn();
+            if (String(out ?? '').trim()) return out;
+            last = new Error('The API returned an empty response');
+        } catch (e) {
+            last = e;
+            if (!TRANSIENT.test(String(e?.message ?? e))) throw e;
+            console.warn(`[Phone] request failed (try ${i + 1}/${tries}):`, e?.message ?? e);
+        }
+    }
+    const reason = String(last?.message ?? last ?? 'Unknown error');
+    throw new Error(`${reason} — tried ${tries} times. This error comes from your API connection (the provider or a proxy), not the phone. If it keeps happening, lower "Peek response length" or pick a different Connection profile for the phone in the extension settings.`);
 }
 
 /**
