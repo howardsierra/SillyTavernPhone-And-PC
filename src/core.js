@@ -441,5 +441,7 @@ export function findById(id) {
         ?? st.velvet.creators.flatMap(c => [c.cover, c.pic, ...(c.posts ?? [])]).find(x => x?.id === id)
         ?? st.velvet.me.posts.find(x => x.id === id)
         ?? Object.values(st.devices).flatMap(d => [...(d.photos ?? []), ...(d.threads ?? []).flatMap(t => t.messages)]).find(x => x.id === id)
+        ?? (st.games?.games ?? []).find(x => x.id === id)
+        ?? Object.values(st.devices).flatMap(d => d.games?.games ?? []).find(x => x.id === id)
         ?? null;
 }

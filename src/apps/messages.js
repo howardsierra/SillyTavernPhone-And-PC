@@ -1,4 +1,4 @@
-import { changed, ctx, ensureGroup, findGroup, liveItems, people, queueItem, saveState, state, userName } from '../core.js';
+import { changed, ctx, ensureGroup, findGroup, liveItems, people, queueItem, saveState, settings, state, userName } from '../core.js';
 import { autoImages } from '../images.js';
 import { isInstant, isPhoneOnly, rememberContact, sendTurn } from '../turn.js';
 import { updateInjection } from '../inject.js';
@@ -111,6 +111,14 @@ function renderList() {
             ${list.length ? `<div class="stp-list">${threadRows(list, 'messages')}</div>` : empty('fa-regular fa-comments', 'No messages yet', `When someone texts ${esc(userName())}, it shows up here.`)}
             ${suggestions.length ? `${sectionLabel('Contacts')}<div class="stp-chips">${suggestions.map(n => `<button class="stp-chip" data-act="msg-open" data-app="messages" data-contact="${esc(n)}">${avatar(n, 'xs')}<span>${esc(n)}</span></button>`).join('')}</div>` : ''}
         </div>`;
+}
+
+/** Two panes for the PC: a list, and what's open. */
+export function splitView(list, main, icon, placeholder) {
+    return `<div class="stp-split">
+        <div class="stp-pane-list">${list}</div>
+        <div class="stp-pane-main">${main || `<div class="stp-pane-empty"><i class="${icon}"></i><span>${esc(placeholder)}</span></div>`}</div>
+    </div>`;
 }
 
 /** Switch between telling the story in chat and roleplaying entirely through the phone. */
@@ -240,6 +248,11 @@ export default {
     group: 'Social',
     badge: () => unreadTexts('messages'),
     render() {
+        // On the PC: conversations on the left, the open one on the right.
+        if (settings().mode === 'pc') {
+            const contact = ui.view === 'thread' ? ui.params.contact : null;
+            return splitView(renderList(), contact ? renderThread('messages', contact) : '', 'fa-regular fa-comments', 'Pick a conversation');
+        }
         if (ui.view === 'thread') return renderThread('messages', ui.params.contact);
         return renderList();
     },

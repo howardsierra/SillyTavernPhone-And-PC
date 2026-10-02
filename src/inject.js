@@ -3,6 +3,7 @@ import { PROMPT_KEY, ctx, hasChat, isChatCharacter, isJustSent, isUser, liveItem
 import { isDelivered, orderStepLabel, ratedStats, requestStatus } from './derived.js';
 import { channelsContext } from './apps/channels.js';
 import { chordContext } from './apps/chord.js';
+import { gamesContext, mailContext } from './apps/desktop.js';
 import { deviceContext } from './apps/theirs.js';
 import { velvetContext } from './apps/velvet.js';
 import { commentContext } from './comments.js';
@@ -116,6 +117,11 @@ export function updateInjection() {
 
     // What's on characters' own phones, once {{user}} has looked.
     parts.push(...deviceContext());
+
+    // PC: email with people from the story, and what {{user}} is playing.
+    const mailLines = mailContext();
+    if (mailLines.length) parts.push(`[Recent emails]\n${mailLines.join('\n')}`);
+    parts.push(...gamesContext());
 
     // Chord servers and Telegram-style channels.
     const chordLines = chordContext();

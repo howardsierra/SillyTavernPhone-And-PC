@@ -34,6 +34,7 @@ An immersion extension that gives `{{user}}` an in-story **phone** (or **PC**). 
 | 📝 **Notes** | Private notes. Characters never see them. |
 | ⭐ **Rated** *(18+, off by default)* | An anonymous app where adults post photos of themselves to be rated 1–10. Rate posts, post yourself, read comments, and maybe spot a character who's secretly posting. |
 | 💎 **Velvet** *(18+, off by default)* | A subscription content app. Discover creators (sometimes someone from your story), pay a monthly sub from Pocket to unlock their posts, tip them, or open **your own page**: set a price, post photos, gain subscribers as the story goes on, and cash out to Pocket. Characters you subscribe to know it's you. |
+| ✉️ **Mail** · 📁 **Files** · 🎮 **Games** *(PC only)* | See [Phone vs PC](#phone-vs-pc). |
 | ⚙️ **Settings** | Phone or PC, dark/light/auto theme, wallpapers (including a custom image), starting balance. |
 
 Deliveries move forward as the story does (food arrives within a few messages, packages take longer), and characters are told when something arrives at their door.
@@ -89,6 +90,21 @@ All of this works in a completely empty chat. Phone messages are hidden from the
 **Prefer the old way?** Set *When you text from the phone* to **Wait for my next chat message**. Texts are then queued (shown faded, still editable) and delivered with your next chat message. **✈** (or Ctrl+Enter) queues the text and sends your chat reply in one go.
 - **Or answer in your reply:** ↩ next to a text adds `*reads Lena's text: "…"*` to your chat box.
 - If you delete your chat message, everything that went with it goes back into the outbox. Swiping or regenerating a reply swaps out the phone activity that came with it.
+
+## Phone vs PC
+
+The phone and the PC are two different devices. Switch between them with the 📱 button on the PC's taskbar, *Switch to phone* in the start menu, the phone's Settings, or `/phone pc` and `/phone phone`.
+
+| | 📱 Phone | 🖥️ PC |
+| --- | --- | --- |
+| Feel | Home screen pages, dock, lock screen, notifications | A desktop: icons, a taskbar with pinned apps, a start menu, and apps that open in windows (maximize with the green button) |
+| Social media | X, Instagram, Reddit, News, Cartly, Live and Velvet are apps | They're **websites**: they open as tabs in the browser, with an address bar and a new-tab page of shortcuts |
+| Messages | One conversation at a time | Two panes: conversations on the left, the open one on the right |
+| Only here | Phone calls, Spark, Pocket, Munch, Locate, Photos, Rated | **Mail** (an inbox with folders; email people from the story and they write back), **Files** (your notes as documents, receipts from orders in Downloads, every photo in Pictures) and **Games** (a game library with hours played, friends online, and "now playing", which the story knows about) |
+
+Open something that lives on the other device (say, a Pocket notification on the PC) and you'll be asked to pick up your phone, or sit down at your computer.
+
+On **their PC** (swap with the avatar pill on the taskbar), Mail, Files and Games show that character's inbox, their documents and downloads, and their game library, hours played included. What you read there goes into the prompt the same way as their phone.
 
 ## Their phone
 
@@ -157,7 +173,7 @@ document.addEventListener('stphone-ready', e => e.detail.registerImageProvider(/
 | Photos | Generator, auto-develop, character appearance, use images from other extensions, photo prompt template |
 | Pocket | Currency symbol, starting balance |
 | Adult (18+) | Enable Rated and Velvet (asks for confirmation), blur photos until tapped, reveal which character is behind an anonymous post |
-| Prompts | Edit every prompt: tag instructions, phone-only roleplay, profile feeds, home feeds, browser, music, the rest of a peek, locate, store search, restaurants, dating profiles, Chord servers and chat, channels and their posts, Velvet creators and posts, their phone (texts, calls, notes, camera roll), Rated feed and comments |
+| Prompts | Edit every prompt: tag instructions, phone-only roleplay, profile feeds, home feeds, browser, music, the rest of a peek, locate, store search, restaurants, dating profiles, Chord servers and chat, channels and their posts, Velvet creators and posts, their phone (texts, calls, notes, camera roll), Mail (inbox and replies), their PC (inbox, files), Games, Rated feed and comments |
 
 ## What generated content is based on
 

@@ -153,7 +153,7 @@ function registerSlashCommand() {
 
 function exposeApi() {
     const api = {
-        version: '0.7.3',
+        version: '0.8.0',
         registerImageProvider: (id, label, fn) => {
             registerImageProvider(id, label, fn);
             syncSettingsUi();

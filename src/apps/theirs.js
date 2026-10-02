@@ -7,6 +7,7 @@ import { autoImages } from '../images.js';
 import { updateInjection } from '../inject.js';
 import { avatar, button, empty, header, iconBtn, peekButton, photo, sectionLabel, shimmerCards, tabs } from '../ui/kit.js';
 import { navigate, ui } from '../ui/state.js';
+import { splitView } from './messages.js';
 import { ago, arr, clock, esc, fmt, norm, parseAgo, sameName, str } from '../util.js';
 
 // ---------------------------------------------------------------- ownership
@@ -294,6 +295,9 @@ export function deviceContext() {
             lines.push(`Texts with ${t.contact}: ${last}`);
         }
         for (const n of d.notes.slice(0, 2)) lines.push(`Private note "${n.title}": ${n.body.replace(/\s+/g, ' ').slice(0, 140)}`);
+        for (const m of (d.mail ?? []).slice(0, 2)) lines.push(`Email ${m.folder === 'sent' ? `to ${m.to}` : `from ${m.from}`}: "${m.subject}" — ${m.body.replace(/\s+/g, ' ').slice(0, 120)}`);
+        for (const f of (d.files ?? []).slice(0, 2)) lines.push(`File on their computer, ${f.name}: ${f.content.replace(/\s+/g, ' ').slice(0, 120)}`);
+        if (d.games?.games?.length) lines.push(`Most played games: ${[...d.games.games].sort((a, b) => b.hours - a.hours).slice(0, 3).map(g => `${g.title} (${g.hours}h)`).join(', ')}`);
         if (d.userContactName) lines.push(`${name} has ${userName()} saved in their contacts as "${d.userContactName}".`);
         if (!lines.length) continue;
         const known = s.snoopNoticed ? `${name} knows ${userName()} has looked through their phone.` : `${name} does NOT know ${userName()} looked through their phone.`;
@@ -345,10 +349,13 @@ function renderTheirThread(name, t) {
 
 function renderMessages(name) {
     const list = conversations(name);
-    if (ui.view === 'thread') {
-        const t = list.find(x => x.id === ui.params.thread);
-        if (t) return renderTheirThread(name, t);
-    }
+    const open = ui.view === 'thread' ? list.find(x => x.id === ui.params.thread) : null;
+    if (settings().mode === 'pc') return splitView(renderTheirList(name, list), open ? renderTheirThread(name, open) : '', 'fa-regular fa-comments', `${name}'s conversations`);
+    if (open) return renderTheirThread(name, open);
+    return renderTheirList(name, list);
+}
+
+function renderTheirList(name, list) {
     const busy = isBusy(busyKey('texts', name));
     const rows = list.map(t => `<button class="stp-row stp-thread-row" data-act="their-thread" data-id="${esc(t.id)}">
         ${threadIcon(t)}

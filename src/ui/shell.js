@@ -1,5 +1,5 @@
 // The device: frame, home screen / desktop, routing, gestures and global actions.
-import { allActions, appById, DOCK, userApps, visibleApps } from '../apps/index.js';
+import { allActions, appById, DOCK, isSite, otherDeviceApp, siteApps, TASKBAR, userApps, visibleApps } from '../apps/index.js';
 import { owner, ownerOptions, theirLockNotes, theirWidgets } from '../apps/theirs.js';
 import { sendText } from '../apps/messages.js';
 import { avatarUrl, balance, changed, findById, hasChat, liveItems, money, onChange, pendingItems, saveSettings, saveState, settings, state, userName } from '../core.js';
@@ -66,6 +66,21 @@ function widgets() {
             <div class="stp-widget-label"><i class="fa-solid fa-check"></i> All caught up</div>
             <div class="stp-widget-title">${esc(new Date().toLocaleDateString([], { weekday: 'long' }))}</div><div class="stp-widget-text">No new messages</div></button>`;
     }
+    if (settings().mode === 'pc') {
+        const mail = (state().mail ?? []).filter(m => m.folder === 'inbox').sort((a, b) => b.time - a.time);
+        const unreadMail = mail.filter(m => !m.read);
+        const latest = unreadMail[0] ?? mail[0];
+        const playing = state().games?.playing;
+        return `<div class="stp-widgets">
+            ${glance}
+            <button class="stp-widget stp-widget-mail" data-act="open-app" data-app="mail">
+                <div class="stp-widget-label"><i class="fa-solid fa-envelope"></i> Mail${unreadMail.length ? ` · ${unreadMail.length} unread` : ''}</div>
+                <div class="stp-widget-title">${esc(latest ? latest.from : 'Inbox')}</div>
+                <div class="stp-widget-text">${esc(latest ? latest.subject : 'Check your email')}</div>
+            </button>
+            ${playing ? `<button class="stp-widget stp-widget-game" data-act="open-app" data-app="games"><div class="stp-widget-label"><i class="fa-solid fa-gamepad"></i> Now playing</div><div class="stp-widget-title">${esc(playing)}</div></button>` : ''}
+        </div>`;
+    }
     return `<div class="stp-widgets">
         ${glance}
         <button class="stp-widget stp-widget-pay" data-act="open-app" data-app="pay">
@@ -102,7 +117,7 @@ function homeView() {
 
 function desktopView() {
     const apps = visibleApps();
-    return `<div class="stp-desktop">
+    return `<div class="stp-desktop" data-act="pc-desk">
         <div class="stp-desktop-icons">${apps.map(a => appIcon(a)).join('')}</div>
         <div class="stp-desktop-widgets">
             <div class="stp-home-clock"><div class="stp-home-time">${esc(nowText().replace(/\s?[AP]M$/i, ''))}</div><div class="stp-home-date">${esc(new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }))}</div></div>
@@ -194,6 +209,14 @@ function currentView() {
     if (ui.app === 'home') return null;
     const app = appById(ui.app);
     if (!app) {
+        // Something from the other device (a notification, a link): offer to switch.
+        const other = !ui.owner && otherDeviceApp(ui.app);
+        if (other) {
+            const pc = settings().mode === 'pc';
+            return `${header(esc(other.label))}${empty(pc ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-desktop', pc ? `${other.label} is on your phone` : `${other.label} is on your PC`,
+                pc ? 'Pick up your phone to use it.' : 'Sit down at your computer to use it.',
+                `<button class="stp-btn stp-btn-primary" data-act="toggle-mode"><i class="fa-solid ${pc ? 'fa-mobile-screen-button' : 'fa-desktop'}"></i><span>${pc ? 'Pick up phone' : 'Go to PC'}</span></button>`)}`;
+        }
         ui.app = 'home';
         return null;
     }
@@ -248,6 +271,86 @@ function ownerWallpaper() {
     return url ? `${tint}, center 20% / cover no-repeat url("${String(url).replace(/["\\]/g, '')}")` : `${tint}, ${gradientFor(who)}`;
 }
 
+
+// ------------------------------------------------------------------- the PC
+
+const SITE_URLS = { browser: 'New Tab', x: 'x.com/home', reddit: 'reddit.com', instagram: 'instagram.com', news: 'newsroom.com', shop: 'cartly.com', live: 'live.tv', velvet: 'velvet.fans' };
+
+function siteUrl() {
+    let url = SITE_URLS[ui.app] ?? `${ui.app}.com`;
+    if (ui.view === 'post') url += `/post/${String(ui.params.id ?? '').slice(-6)}`;
+    else if (ui.view) url += `/${ui.view}`;
+    else if (ui.params.tab && ui.params.tab !== 'feed') url += `/${ui.params.tab}`;
+    if (ui.owner && ['x', 'instagram', 'reddit'].includes(ui.app)) url = `${SITE_URLS[ui.app].split('/')[0]}/${String(state().profiles[ui.owner]?.handles?.[ui.app] ?? ui.owner).replace(/^@|^u\//, '')}`;
+    return url;
+}
+
+function tabStrip() {
+    const tabs = [{ id: 'browser', label: 'New Tab', icon: 'fa-solid fa-compass', color: 'linear-gradient(180deg, #5ac8fa, #0a7aff)' }, ...siteApps()];
+    return `<div class="stp-tabstrip">${tabs.map(t => `<button class="stp-site-tab ${ui.app === t.id ? 'stp-active' : ''}" data-act="open-app" data-app="${t.id}" title="${esc(t.label)}">
+        <span class="stp-tab-favicon" style="--glyph:${t.color}"><i class="${t.icon}"></i></span><span class="stp-site-tab-label">${esc(t.label)}</span>
+    </button>`).join('')}</div>`;
+}
+
+function urlBar() {
+    return `<div class="stp-urlbar">
+        <button class="stp-icon-btn" data-act="back" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+        <button class="stp-icon-btn" data-act="open-app" data-app="${esc(ui.app)}" title="Reload"><i class="fa-solid fa-rotate-right"></i></button>
+        <div class="stp-url"><i class="fa-solid fa-lock"></i><span>${esc(siteUrl())}</span></div>
+        ${owner() ? `<span class="stp-url-owner">${avatar(owner(), 'xs')}${esc(owner())}'s browser</span>` : ''}
+    </div>`;
+}
+
+/** The new-tab page: shortcuts to the websites. */
+function speedDial() {
+    return `<div class="stp-speed-dial">
+        <div class="stp-speed-search"><i class="fa-solid fa-magnifying-glass"></i><span>${owner() ? `${esc(owner())}'s browser — their history is below` : 'Search or type a web address'}</span></div>
+        <div class="stp-speed-tiles">${siteApps().map(a => `<button class="stp-speed-tile" data-act="open-app" data-app="${a.id}">
+            <span class="stp-app-glyph" style="--glyph:${a.color}"><i class="${a.icon}"></i></span><span>${esc(SITE_URLS[a.id]?.split('/')[0] ?? a.label)}</span>
+        </button>`).join('')}</div>
+    </div>`;
+}
+
+function taskbar() {
+    const current = isSite(ui.app) ? 'browser' : ui.app;
+    const pinned = TASKBAR.map(id => appById(id)).filter(a => a && !isSite(a.id) || a?.id === 'browser');
+    // Open apps that aren't pinned show up too.
+    const open = appById(ui.app);
+    if (open && !isSite(open.id) && !pinned.some(a => a.id === open.id)) pinned.push(open);
+    const who = owner();
+    const d = new Date();
+    return `<div class="stp-taskbar stp-drag">
+        <button class="stp-start ${ui.startMenu ? 'stp-active' : ''}" data-act="pc-start" title="Start"><i class="fa-solid fa-grip"></i></button>
+        <div class="stp-task-apps">${pinned.map(a => {
+            const badge = who ? 0 : badgeFor(a);
+            return `<button class="stp-task-app ${current === a.id ? 'stp-active' : ''}" data-act="open-app" data-app="${a.id}" title="${esc(a.label)}">
+                <span class="stp-app-glyph stp-glyph-sm" style="--glyph:${a.color}"><i class="${a.icon}"></i></span>${badge ? `<span class="stp-task-badge">${badge > 99 ? '99+' : badge}</span>` : ''}
+            </button>`;
+        }).join('')}</div>
+        <div class="stp-task-tray">
+            ${ownerOptions().length && hasChat() ? `<button class="stp-task-owner ${who ? 'stp-theirs' : ''}" data-act="owner-menu" title="Swap whose PC this is">${avatar(who ?? userName(), 'xs')}<span>${esc(who ? `${who}'s PC` : 'Your PC')}</span><i class="fa-solid fa-right-left"></i></button>` : ''}
+            <button class="stp-task-icon" data-act="toggle-mode" title="Pick up your phone"><i class="fa-solid fa-mobile-screen-button"></i></button>
+            <span class="stp-task-clock"><span class="stp-titlebar-clock">${esc(nowText())}</span><small>${esc(d.toLocaleDateString([], { month: 'short', day: 'numeric' }))}</small></span>
+            <button class="stp-task-icon" data-act="close" title="Close"><i class="fa-solid fa-power-off"></i></button>
+        </div>
+    </div>`;
+}
+
+function startMenu() {
+    if (!ui.startMenu) return '';
+    const who = owner();
+    const icon = a => `<button class="stp-start-app" data-act="open-app" data-app="${a.id}"><span class="stp-app-glyph" style="--glyph:${a.color}"><i class="${a.icon}"></i></span><span>${esc(a.label)}</span></button>`;
+    return `<div class="stp-start-backdrop" data-act="pc-start"></div>
+        <div class="stp-start-menu">
+            <div class="stp-start-section">Apps</div>
+            <div class="stp-start-grid">${visibleApps().map(icon).join('')}</div>
+            <div class="stp-start-section">Websites</div>
+            <div class="stp-start-grid">${siteApps().map(icon).join('')}</div>
+            <div class="stp-start-foot">${avatar(who ?? userName(), 'sm')}<b>${esc(who ?? userName())}</b>
+                <button class="stp-btn stp-btn-soft stp-btn-sm" data-act="toggle-mode"><i class="fa-solid fa-mobile-screen-button"></i><span>Switch to phone</span></button></div>
+        </div>`;
+}
+
 // --------------------------------------------------------------------- render
 
 let renderQueued = false;
@@ -290,7 +393,7 @@ export function render() {
     const focusKey = device.contains(active) ? active?.dataset?.draft : null;
     const selStart = active?.selectionStart;
     const selEnd = active?.selectionEnd;
-    const scrollEl = device.querySelector('.stp-scroll');
+    const scrollEl = device.querySelector('.stp-pane-main .stp-scroll') ?? device.querySelector('.stp-scroll');
     const scrollKey = scrollEl?.dataset.scroll;
     const scrollTop = scrollEl?.scrollTop;
 
@@ -303,32 +406,27 @@ export function render() {
     const appClass = app ? `stp-app-${app.id}` : 'stp-app-home';
 
     if (s.mode === 'pc') {
-        const groups = {};
-        for (const a of visibleApps()) (groups[a.group ?? 'Apps'] ??= []).push(a);
-        const nav = Object.entries(groups).map(([g, list]) => `<div class="stp-nav-group">${esc(g)}</div>${list.map(a => {
-            const badge = badgeFor(a);
-            return `<button class="stp-nav-item ${ui.app === a.id ? 'stp-active' : ''}" data-act="open-app" data-app="${a.id}">
-                <span class="stp-app-glyph stp-glyph-sm" style="--glyph:${a.color}"><i class="${a.icon}"></i></span><span class="stp-nav-label">${esc(a.label)}</span>
-                ${badge ? `<span class="stp-count">${badge}</span>` : ''}
-            </button>`;
-        }).join('')}`).join('');
-        device.innerHTML = `<div class="stp-window">
-            <div class="stp-titlebar stp-drag">
-                <span class="stp-lights"><button data-act="close" title="Close" class="stp-light stp-light-red"></button><button data-act="home" title="Desktop" class="stp-light stp-light-yellow"></button><button data-act="toggle-mode" title="Switch to phone" class="stp-light stp-light-green"></button></span>
-                <span class="stp-titlebar-title">${esc(app ? `${app.label}${owner() ? ` — ${owner()}'s PC` : ''}` : owner() ? `${owner()}'s PC` : `${userName()}'s PC`)}</span>
-                ${ownerOptions().length && hasChat() ? `<button class="stp-titlebar-owner" data-act="owner-menu" title="Swap whose PC this is">${avatar(owner() ?? userName(), 'xs')}<i class="fa-solid fa-right-left"></i></button>` : ''}
-                <span class="stp-titlebar-clock">${esc(nowText())}</span>
+        const site = view !== null && isSite(ui.app);
+        const win = view === null ? '' : `<section class="stp-appwin ${ui.maximized ? 'stp-max' : ''} ${anim ? 'stp-anim-win' : ''}">
+                <div class="stp-appwin-bar">
+                    <span class="stp-lights"><button data-act="home" title="Close" class="stp-light stp-light-red"></button><button data-act="home" title="Minimize" class="stp-light stp-light-yellow"></button><button data-act="pc-maximize" title="${ui.maximized ? 'Restore' : 'Maximize'}" class="stp-light stp-light-green"></button></span>
+                    <span class="stp-appwin-title">${site || !app ? '' : `<span class="stp-app-glyph stp-glyph-xs" style="--glyph:${app.color}"><i class="${app.icon}"></i></span>${esc(app.label)}`}</span>
+                    ${site ? tabStrip() : ''}
+                </div>
+                ${site ? urlBar() : ''}
+                <div class="stp-screen ${appClass} ${site ? 'stp-site' : ''}"><div class="stp-view">${ui.app === 'browser' && !ui.view ? speedDial() : ''}${view}</div></div>
+            </section>`;
+        device.innerHTML = `<div class="stp-window stp-pc">
+            <div class="stp-desk">
+                ${desktopView()}
+                ${win}
+                ${startMenu()}
+                ${outboxBar()}
+                ${bannerHtml()}
+                ${viewerHtml()}
+                ${ownerSheet()}
             </div>
-            <div class="stp-pc-body">
-                <nav class="stp-sidebar"><button class="stp-nav-item ${ui.app === 'home' ? 'stp-active' : ''}" data-act="home"><span class="stp-app-glyph stp-glyph-sm" style="--glyph:linear-gradient(160deg,#5e5ce6,#bf5af2)"><i class="fa-solid fa-house"></i></span><span class="stp-nav-label">Desktop</span></button>${nav}</nav>
-                <main class="stp-screen ${appClass}">
-                    <div class="stp-view ${anim}">${view ?? desktopView()}</div>
-                    ${outboxBar()}
-                    ${bannerHtml()}
-                    ${viewerHtml()}
-                    ${ownerSheet()}
-                </main>
-            </div>
+            ${taskbar()}
         </div>`;
     } else {
         const onHome = view === null || ui.locked;
@@ -352,7 +450,7 @@ export function render() {
         </div>`;
     }
 
-    const newScroll = device.querySelector('.stp-scroll');
+    const newScroll = device.querySelector('.stp-pane-main .stp-scroll') ?? device.querySelector('.stp-scroll');
     if (newScroll) {
         if (ui.scrollBottom) newScroll.scrollTop = newScroll.scrollHeight;
         else if (scrollKey && newScroll.dataset.scroll === scrollKey) newScroll.scrollTop = scrollTop;
@@ -436,6 +534,12 @@ export function toggle() {
 function goBack() {
     const app = appById(ui.app);
     if (app?.back?.()) return;
+    if (!ui.view && isSite(ui.app) && ui.app !== 'browser') {
+        ui.app = 'browser';
+        ui.params = {};
+        changed();
+        return;
+    }
     if (ui.view) {
         const tab = ui.params.tab;
         ui.view = null;
@@ -450,6 +554,7 @@ function goBack() {
 const GLOBAL_ACTIONS = {
     close: () => close(),
     home: () => {
+        ui.startMenu = false;
         ui.app = 'home';
         ui.view = null;
         ui.params = {};
@@ -457,6 +562,7 @@ const GLOBAL_ACTIONS = {
     },
     back: () => goBack(),
     'open-app': el => {
+        ui.startMenu = false;
         ui.app = el.dataset.app;
         ui.view = null;
         ui.params = {};
@@ -508,11 +614,34 @@ const GLOBAL_ACTIONS = {
     },
     'toggle-mode': () => {
         settings().mode = settings().mode === 'pc' ? 'phone' : 'pc';
+        ui.startMenu = false;
+        // Stay in the same app if this device has it (Messages, Music…), otherwise start at home.
+        if (ui.app !== 'home' && !appById(ui.app)) {
+            ui.app = 'home';
+            ui.view = null;
+            ui.params = {};
+        } else if (settings().mode === 'pc' && ui.app !== 'home' && !isSite(ui.app)) {
+            ui.view = ui.app === 'messages' ? ui.view : null;
+        }
+        ui.locked = false;
         saveSettings();
         applyDevicePosition();
         changed();
     },
     'send-turn': () => sendTurn(),
+    'pc-start': () => {
+        ui.startMenu = !ui.startMenu;
+        changed();
+    },
+    'pc-maximize': () => {
+        ui.maximized = !ui.maximized;
+        changed();
+    },
+    'pc-desk': () => {
+        if (!ui.startMenu) return;
+        ui.startMenu = false;
+        changed();
+    },
     'home-page': el => {
         ui.homePage = Number(el.dataset.page) || 0;
         const pages = document.querySelector('#stp-device .stp-home-pages');

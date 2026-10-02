@@ -22,6 +22,11 @@ export const PROMPT_LABELS = {
     devCalls: 'Their phone: call log',
     devNotes: 'Their phone: private notes',
     devPhotos: 'Their phone: camera roll',
+    mailInbox: 'Mail (PC): {{user}}\'s inbox',
+    mailReply: 'Mail (PC): a reply to {{user}}\'s email',
+    devMail: 'Their PC: a character\'s inbox',
+    devFiles: 'Their PC: a character\'s files',
+    games: 'Games (PC): game library and friends',
     news: 'News: headlines',
     live: 'Live: who is streaming',
     liveChat: 'Live: a stream\'s chat',
@@ -218,6 +223,49 @@ ${JSON_ONLY}
 
 ${JSON_ONLY}
 {"photos": [{"image": "detailed description of the photo", "album": "Recents, Favorites, Screenshots or Hidden", "ago": "1d"}]}]`,
+
+    mailInbox: `[OOC: Pause the roleplay. {{user}} checks their email inbox on their computer. Write {{count}} recent emails: newsletters, receipts and shipping updates, work or school mail, an account alert, maybe a scam — and, where it fits the story, emails from people in it ({{people}}; use their exact names). Put 1-2 obvious junk emails in "spam". ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"emails": [{"from": "sender name", "address": "sender@example.com", "subject": "...", "body": "the email text (a few short paragraphs, line breaks allowed)", "ago": "3h", "folder": "inbox or spam"}]}]`,
+
+    mailReply: `[OOC: Pause the roleplay. {{user}} sent {{name}} an email.
+Subject: {{subject}}
+{{body}}
+
+Earlier emails between them:
+{{earlier}}
+
+Write {{name}}'s reply email, in character and consistent with the story — the tone people use in email (could be warm, formal, flustered, curt…). If {{name}} wouldn't answer, set "reply" to false. ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"reply": true, "subject": "Re: ...", "body": "..."}]`,
+
+    devMail: `[OOC: Pause the roleplay. {{user}} is looking through {{name}}'s email on their computer. Write 7-10 emails in {{name}}'s inbox that reveal their life: work/school, bills, subscriptions, family, old friends, something they'd rather keep private, maybe something about {{user}}. Include 1-2 emails {{name}} sent (folder "sent"). ${STYLE} ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"emails": [{"from": "sender name (or {{name}} for sent mail)", "to": "recipient (sent mail only)", "address": "sender@example.com", "subject": "...", "body": "...", "ago": "2d", "folder": "inbox or sent"}]}]`,
+
+    devFiles: `[OOC: Pause the roleplay. {{user}} is looking through the files on {{name}}'s computer. Invent 8-12 files in their Documents, Downloads and Desktop folders that fit their life and the story: essays, drafts, spreadsheets, lists, letters never sent, a diary, receipts, screenshots, a suspiciously named folder… Give realistic file names with extensions, and the text inside for documents. ${STYLE} ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"files": [{"name": "budget_2024.xlsx", "folder": "Documents, Downloads or Desktop", "ago": "3d", "size": "24 KB", "content": "what's inside (text documents: the actual text; other files: a short description)"}]}]`,
+
+    games: `[OOC: Pause the roleplay. {{who}} opens a game launcher on {{whose}} computer. Invent the game library: 6-9 games that fit {{whose}} tastes, personality and the setting (in-world games if the setting has no video games — or plausible equivalents), with hours played (be revealing: a guilty pleasure, an obsession) and when last played. Also the friends list: 4-7 friends with what they're doing right now — people from the story where it fits ({{people}}; exact names) and online friends with gamer tags. ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"games": [{"title": "...", "genre": "...", "hours": 120, "lastPlayed": "2d", "cover": "cover art description"}], "friends": [{"name": "...", "status": "Playing <game> | Online | Away | Offline 3h"}]}]`,
 
     news: `[OOC: Pause the roleplay. Write the news feed {{user}} sees on their phone right now: 8 articles from the world of the story — local news, world events, gossip, entertainment, weather, sports or the in-world equivalent. Where it fits, include stories touching on recent story events or people (rumours, sightings, consequences), but keep most of it everyday news that makes the world feel alive. ${WORLD}
 {{more}}
