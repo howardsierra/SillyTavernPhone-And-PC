@@ -17,6 +17,8 @@ An immersion extension that gives `{{user}}` an in-story **phone** (or **PC**). 
 | 💬 **Messages** | Text anyone and get replies right away. Group chats, photos, voice messages, emoji reactions, read receipts, and the occasional spam or scam text from an unknown number. ↩ quotes a text into your chat reply. |
 | 📞 **Phone** | Recent calls, missed calls, voicemail transcripts, contacts. Calling someone connects with your next reply. |
 | 𝕏 **X**, 📸 **Instagram**, 👽 **Reddit** | **Feed**: your home timeline (story characters mixed with everyone else), with refresh and load more. **Profiles**: peek at anyone's whole profile feed, then load older posts. Tap a name to open their profile. Post as yourself. **Tap any post to open its comments**, then reply to the post or to a specific comment. People answer right away, the poster included, and story characters stay in character and remember the exchange. |
+| 🎮 **Chord** | Discord-style servers you're in: friend groups, local communities, fandoms. Server rail, channels, member list. Open a channel to read the chatter, catch up (⏩), or post. Members answer right away, story characters among them, and what's said is remembered in the prompt. |
+| ✈️ **Channels** | Telegram-style broadcast channels: local news, gossip, memes, and an **anonymous confessions** channel. React with emoji, load older posts, confess anonymously yourself, or pay (from Pocket, getting pricier each time) to find out who wrote a confession. A character might be behind one. |
 | 📺 **Live** | Twitch-style streams, sometimes by people from your story. Watch, chat, and donate from Pocket. The streamer reads your messages. |
 | 📰 **News** | Headlines from your story's world, sometimes about what's been happening. Open an article, or load more stories. |
 | 📅 **Calendar** | Plans and reminders. Invite people and they're told (and can answer). Characters can add plans too. |
@@ -30,6 +32,7 @@ An immersion extension that gives `{{user}}` an in-story **phone** (or **PC**). 
 | 🖼️ **Photos** | Every photo you've sent and received. |
 | 📝 **Notes** | Private notes. Characters never see them. |
 | ⭐ **Rated** *(18+, off by default)* | An anonymous app where adults post photos of themselves to be rated 1–10. Rate posts, post yourself, read comments, and maybe spot a character who's secretly posting. |
+| 💎 **Velvet** *(18+, off by default)* | A subscription content app. Discover creators (sometimes someone from your story), pay a monthly sub from Pocket to unlock their posts, tip them, or open **your own page**: set a price, post photos, gain subscribers as the story goes on, and cash out to Pocket. Characters you subscribe to know it's you. |
 | ⚙️ **Settings** | Phone or PC, dark/light/auto theme, wallpapers (including a custom image), starting balance. |
 
 Deliveries move forward as the story does (food arrives within a few messages, packages take longer), and characters are told when something arrives at their door.
@@ -135,8 +138,8 @@ document.addEventListener('stphone-ready', e => e.detail.registerImageProvider(/
 | Prompt injection | What goes into the prompt (texts and calls, posts, payments, orders, searches), how much, depth and role. Peek response length. |
 | Photos | Generator, auto-develop, character appearance, use images from other extensions, photo prompt template |
 | Pocket | Currency symbol, starting balance |
-| Adult (18+) | Enable Rated (asks for confirmation), blur photos until tapped, reveal which character is behind an anonymous post |
-| Prompts | Edit every prompt: tag instructions, phone-only roleplay, profile feeds, home feeds, browser, music, the rest of a peek, locate, store search, restaurants, dating profiles, Rated feed and comments |
+| Adult (18+) | Enable Rated and Velvet (asks for confirmation), blur photos until tapped, reveal which character is behind an anonymous post |
+| Prompts | Edit every prompt: tag instructions, phone-only roleplay, profile feeds, home feeds, browser, music, the rest of a peek, locate, store search, restaurants, dating profiles, Chord servers and chat, channels and their posts, Velvet creators and posts, Rated feed and comments |
 
 ## What generated content is based on
 
@@ -159,4 +162,4 @@ Instant replies with the chat as memory, group texts, reactions, voice messages,
 - All phone data is stored in the chat's metadata, so every chat has its own phone.
 - Peeking, store searches, restaurants, dating profiles and Rated feeds each use one quiet generation. If results get cut off, raise **Peek response length**.
 - Group chats are supported: any member can text you, and you can peek at each one.
-- Rated is for adults only. It's hidden unless you enable it, its prompts say every user is 18+, and its photos are blurred until tapped by default.
+- Rated and Velvet are for adults only. They are hidden unless you enable them, their prompts say everyone is 18+, and their photos are blurred until tapped by default.

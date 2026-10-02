@@ -1,5 +1,7 @@
 import { settings } from '../core.js';
 import { browserApp, musicApp } from './browser.js';
+import channels from './channels.js';
+import chord from './chord.js';
 import food from './food.js';
 import { calendarApp, liveApp, newsApp } from './extras.js';
 import { locateApp, notesApp, photosApp } from './life.js';
@@ -11,8 +13,9 @@ import settingsApp from './settings-app.js';
 import shop from './shop.js';
 import { instagramApp, redditApp, socialActions, xApp } from './social.js';
 import spark from './spark.js';
+import velvet from './velvet.js';
 
-export const ALL_APPS = [phone, messages, browserApp, musicApp, xApp, instagramApp, redditApp, liveApp, spark, pay, shop, food, newsApp, calendarApp, locateApp, photosApp, notesApp, settingsApp, rated];
+export const ALL_APPS = [phone, messages, browserApp, musicApp, xApp, instagramApp, redditApp, chord, channels, liveApp, spark, pay, shop, food, newsApp, calendarApp, locateApp, photosApp, notesApp, settingsApp, rated, velvet];
 
 export const DOCK = ['phone', 'messages', 'browser', 'music'];
 

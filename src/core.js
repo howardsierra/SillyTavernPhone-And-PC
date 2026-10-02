@@ -132,6 +132,10 @@ export function state() {
     st.spark.passed ??= [];
     st.spark.liked ??= [];
     st.rated ??= {};
+    st.chord ??= { servers: [] };
+    st.tg ??= { channels: [], reveals: 0 };
+    st.velvet ??= { creators: [] };
+    st.velvet.me ??= { posts: [], price: 9.99, bio: '', cashedOut: 0 };
     return st;
 }
 
@@ -429,5 +433,8 @@ export function findById(id) {
         ?? st.spark.matches.find(x => x.id === id)
         ?? (st.spark.me.id === id ? st.spark.me : null)
         ?? Object.values(st.profiles).map(p => p.dating).find(x => x?.id === id)
+        ?? st.tg.channels.flatMap(c => c.posts ?? []).find(x => x.id === id)
+        ?? st.velvet.creators.flatMap(c => [c.cover, c.pic, ...(c.posts ?? [])]).find(x => x?.id === id)
+        ?? st.velvet.me.posts.find(x => x.id === id)
         ?? null;
 }

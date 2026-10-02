@@ -1,6 +1,9 @@
 // Builds the phone context that is injected into every prompt.
 import { PROMPT_KEY, ctx, hasChat, isChatCharacter, isJustSent, isUser, liveItems, money, promptText, settings, state, sub, userName } from './core.js';
 import { isDelivered, orderStepLabel, ratedStats, requestStatus } from './derived.js';
+import { channelsContext } from './apps/channels.js';
+import { chordContext } from './apps/chord.js';
+import { velvetContext } from './apps/velvet.js';
 import { commentContext } from './comments.js';
 import { isQuietGenerating } from './gen.js';
 import { APP_NAMES } from './parse.js';
@@ -110,6 +113,12 @@ export function updateInjection() {
     const commentLines = commentContext(items.filter(x => x.kind === 'post' && x.thread?.length));
     if (commentLines.length) parts.push(`[Recent comments on social media]\n${commentLines.join('\n')}`);
 
+    // Chord servers and Telegram-style channels.
+    const chordLines = chordContext();
+    if (chordLines.length) parts.push(`[Recent messages in Chord (Discord-like) servers]\n${chordLines.join('\n')}`);
+    const channelLines = channelsContext();
+    if (channelLines.length) parts.push(`[Channels app (Telegram-like)]\n${channelLines.join('\n')}`);
+
     // Spark: matches with people in the story and {{user}}'s likes.
     const st = state();
     const sparkLines = [];
@@ -131,6 +140,8 @@ export function updateInjection() {
         }
         for (const p of ratedGen) lines.push(`${user} anonymously rated a Rated post ${p.myRating}/10 — the post is secretly ${p.secretlyBy}'s (${user} may not know that).`);
         if (lines.length) parts.push(`[Rated (anonymous 18+ rating app) — only the poster knows a post is theirs]\n${lines.join('\n')}`);
+        const velvetLines = velvetContext();
+        if (velvetLines.length) parts.push(`[Velvet (18+ subscription content app)]\n${velvetLines.join('\n')}`);
     }
 
     // Calendar: plans {{user}} shares with people, and plans characters made.

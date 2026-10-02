@@ -7,7 +7,7 @@
 //
 // Phone-only roleplay always delivers instantly and asks the model to keep the
 // whole story on the phone.
-import { changed, chatCharacters, commitPending, ctx, findGroup, isUser, money, pendingItems, promptText, saveState, settings, state, sub, userName } from './core.js';
+import { changed, chatCharacters, commitPending, ctx, findGroup, isUser, money, nextId, pendingItems, promptText, queueItem, saveState, settings, state, sub, userName } from './core.js';
 import { updateInjection } from './inject.js';
 import { llm } from './llm.js';
 import { APP_NAMES, hasTags } from './parse.js';
@@ -295,4 +295,24 @@ export function wrapPlainReply(message, mesId) {
     const target = currentContact() ?? { app: 'messages', contact: message.name };
     message.mes = normaliseReply(text, target).mes;
     return true;
+}
+
+/**
+ * Spend Pocket money from an app (subscriptions, tips, reveals…).
+ * Paying someone from the story is a real payment they hear about (delivered like
+ * any other phone action); paying a stranger just leaves your balance.
+ */
+export function payFrom(to, amount, note, { known = false } = {}) {
+    const st = state();
+    if (known) {
+        queueItem({ kind: 'pay', payType: 'pay', from: userName(), to, amount, note });
+        if (isInstant()) sendTurn();
+        return;
+    }
+    st.items.push({
+        id: nextId(st), kind: 'pay', payType: 'pay', from: userName(), to, amount, note,
+        source: 'user', status: 'sent', read: true, anchor: null, stranger: true, time: Date.now(),
+    });
+    saveState();
+    changed();
 }

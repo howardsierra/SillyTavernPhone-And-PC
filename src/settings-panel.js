@@ -100,7 +100,7 @@ function html() {
             ${row('Starting balance (new chats)', '<input class="text_pole" type="number" min="0" step="1" data-setting="startingBalance">')}
 
             <h4>Adult (18+)</h4>
-            ${check('adultApps', 'Enable adult apps (Rated — anonymous photo rating)')}
+            ${check('adultApps', 'Enable adult apps (Rated — anonymous photo rating; Velvet — subscription content)')}
             ${check('blurAdult', 'Blur 18+ photos until tapped')}
             ${check('revealAnon', 'Reveal which character is behind an anonymous post')}
 
@@ -162,7 +162,7 @@ export function createSettingsPanel() {
         const s = settings();
         if (key === 'adultApps' && el.checked && !s.adultApps) {
             const c = ctx();
-            const ok = await c.callGenericPopup('Rated is an adult app. Only enable it if you are 18 or older and want adult content in your roleplay.', c.POPUP_TYPE.CONFIRM, '', { okButton: 'I\'m 18+, enable' });
+            const ok = await c.callGenericPopup('Rated and Velvet are adult apps. Only enable it if you are 18 or older and want adult content in your roleplay.', c.POPUP_TYPE.CONFIRM, '', { okButton: 'I\'m 18+, enable' });
             if (!ok) {
                 el.checked = false;
                 return;

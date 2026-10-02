@@ -54,9 +54,9 @@ export default {
                 </div>
                 ${sectionLabel('Apps')}
                 <div class="stp-card stp-list-card">
-                    ${toggleRow('adultApps', 'Adult (18+) apps', 'Shows Rated, an anonymous photo-rating app')}
+                    ${toggleRow('adultApps', 'Adult (18+) apps', 'Shows Rated (anonymous photo rating) and Velvet (subscriptions)')}
                     ${s.adultApps ? toggleRow('blurAdult', 'Blur 18+ photos', 'Tap a photo to reveal it') : ''}
-                    ${s.adultApps ? toggleRow('revealAnon', 'Reveal anonymous posters', 'Show which story character is behind a Rated post') : ''}
+                    ${s.adultApps ? toggleRow('revealAnon', 'Reveal anonymous posters', 'Show which story character is behind a Rated post or confession') : ''}
                     ${toggleRow('notify', 'Notifications', 'Pop-ups outside the phone')}
                     ${toggleRow('lockScreen', 'Lock screen', 'Show new notifications on a lock screen when you open the phone')}
                     ${toggleRow('spamTexts', 'Spam & scam texts', 'Now and then a sketchy text arrives from an unknown number')}
@@ -74,7 +74,7 @@ export default {
             const s = settings();
             if (key === 'adultApps' && !s.adultApps) {
                 const c = ctx();
-                const ok = await c.callGenericPopup('Rated is an adult app. Only enable it if you are 18 or older and want adult content in your roleplay.', c.POPUP_TYPE.CONFIRM, '', { okButton: 'I\'m 18+, enable' });
+                const ok = await c.callGenericPopup('Rated and Velvet are adult apps. Only enable it if you are 18 or older and want adult content in your roleplay.', c.POPUP_TYPE.CONFIRM, '', { okButton: 'I\'m 18+, enable' });
                 if (!ok) return;
             }
             s[key] = !s[key];

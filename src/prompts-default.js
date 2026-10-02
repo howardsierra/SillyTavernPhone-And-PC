@@ -11,6 +11,12 @@ export const PROMPT_LABELS = {
     reply: 'Reply to a text (instant delivery)',
     replyGroup: 'Reply in a group text',
     comments: 'Comments on a post (and replies to yours)',
+    servers: 'Chord: servers you\'re in',
+    serverChat: 'Chord: a channel\'s chat',
+    tgChannels: 'Channels: broadcast channels to follow',
+    tgPosts: 'Channels: a channel\'s posts',
+    velvetCreators: 'Velvet (18+): creators',
+    velvetPosts: 'Velvet (18+): a creator\'s posts',
     news: 'News: headlines',
     live: 'Live: who is streaming',
     liveChat: 'Live: a stream\'s chat',
@@ -117,6 +123,55 @@ People from the story who might comment (use their exact names, in character): {
 
 ${JSON_ONLY}
 {"comments": [{"author": "name", "handle": "@handle", "text": "...", "replyTo": "name of the person this answers, or empty", "likes": 3}]}]`,
+
+    servers: `[OOC: Pause the roleplay. {{user}} opens a Discord-style chat app. Invent 4 servers {{user}} is a member of — for example a friend group, a local community, a hobby or fandom server, and a work/school/guild server. Where it fits, people from the story are members (use their exact names): {{people}}. Each server has 3-5 text channels with short topics. ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"servers": [{"name": "...", "icon": "one emoji", "description": "...", "members": ["member names, including story people where it fits"], "channels": [{"name": "general", "topic": "..."}]}]}]`,
+
+    serverChat: `[OOC: Pause the roleplay. Discord-style server "{{server}}", channel #{{channel}} ({{topic}}). Members include: {{members}}.
+Recent messages:
+{{recent}}
+
+{{task}}
+Write it like real group chat: short messages, casual typing, emoji, jokes, side conversations. People from the story stay in character and use their exact names; everyone else is an invented member with a fitting username. ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"messages": [{"author": "name", "text": "...", "replyTo": "name they answer, or empty"}]}]`,
+
+    tgChannels: `[OOC: Pause the roleplay. {{user}} browses a Telegram-style channels app. Invent 5 broadcast channels worth following: local news, gossip, memes, a niche interest, and an anonymous confessions channel named like "Overheard in <place>" (set "anonymous": true for that one). They fit the world and may talk about what's happening in the story. ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"channels": [{"name": "...", "emoji": "📰", "description": "...", "subscribers": 12400, "anonymous": false}]}]`,
+
+    tgPosts: `[OOC: Pause the roleplay. The channel "{{channel}}" ({{description}}). Write its {{count}} most recent posts{{anonRule}} Posts may touch on what's happening in the story. ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"posts": [{"text": "...", "image": "optional: what an attached photo shows", "views": 1200, "ago": "2h", "reactions": {"🔥": 12, "😂": 4}, "secretlyBy": ""}]}]`,
+
+    velvetCreators: `[OOC: Pause the roleplay. {{user}} browses "Velvet", a subscription app where adult creators (all 18+, consenting) post exclusive photos for paying subscribers. Invent 6 creators with varied looks, vibes and niches (fitness, cosplay, lingerie, alt, girl/boy-next-door, artsy), each with a monthly price. If it plausibly fits a story character's personality and situation, ONE creator may be that character (exact name, "storyCharacter": true): {{people}}. ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"creators": [{"name": "display name", "handle": "@...", "bio": "...", "price": 9.99, "avatar": "profile photo description", "cover": "banner photo description", "posts": 42, "storyCharacter": false}]}]`,
+
+    velvetPosts: `[OOC: Pause the roleplay. {{name}} is a creator on Velvet, an 18+ subscription app ({{bio}}). Write their {{count}} latest posts: what each photo shows and the caption, in their own voice — teasing, flirty, personal. Everyone shown is a consenting adult. ${WORLD}
+{{more}}
+
+{{context}}
+
+${JSON_ONLY}
+{"posts": [{"image": "photo description", "caption": "...", "likes": 230, "ago": "1d"}]}]`,
 
     news: `[OOC: Pause the roleplay. Write the news feed {{user}} sees on their phone right now: 8 articles from the world of the story — local news, world events, gossip, entertainment, weather, sports or the in-world equivalent. Where it fits, include stories touching on recent story events or people (rumours, sightings, consequences), but keep most of it everyday news that makes the world feel alive. ${WORLD}
 {{more}}
