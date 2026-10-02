@@ -1,9 +1,10 @@
-import { avatarUrl, changed, isUser, liveItems, people, queueItem, settings, state, userName } from '../core.js';
+import { avatarUrl, changed, isUser, liveItems, people, queueItem, saveState, settings, state, userName } from '../core.js';
+import { addComment, commentCount, generateComments, threadOf } from '../comments.js';
 import { generateImage } from '../images.js';
 import { avatar, button, empty, header, input, moreButton, peekButton, peekNote, personChips, photo, queuedBadge, shimmerCards, tabs, textarea } from '../ui/kit.js';
 import { generateFeed, isBusy, peekApp } from '../gen.js';
-import { clearDrafts, draft, ui } from '../ui/state.js';
-import { ago, compact, esc, fmt, gradientFor, norm } from '../util.js';
+import { clearDrafts, draft, navigate, ui } from '../ui/state.js';
+import { ago, compact, esc, fmt, gradientFor, norm, sameName } from '../util.js';
 
 const META = {
     x: { label: 'X', icon: 'fa-brands fa-x-twitter', color: 'linear-gradient(180deg, #2a2a2a, #000)' },
@@ -29,20 +30,23 @@ function authorLink(it) {
     return `class="stp-author" data-act="open-profile" data-app="${esc(it.app)}" data-name="${esc(it.from)}"`;
 }
 
-export function renderPost(it) {
+export function renderPost(it, { detail = false } = {}) {
     const handle = it.handle || handleOf(it.from, it.app);
+    // Tapping a post opens its comments (not while it's still queued, or already open).
+    const open = !detail && it.status !== 'pending' ? `data-act="post-open" data-id="${esc(it.id)}"` : '';
+    const comments = commentCount(it);
     const when = it.status === 'pending' ? 'queued' : ago(it.time);
     const name = isUser(it.from) ? userName() : it.from;
 
     if (it.app === 'x') {
-        return `<article class="stp-post stp-post-x">
+        return `<article class="stp-post stp-post-x ${open ? 'stp-tappable' : ''}" ${open}>
             ${avatar(it.from, 'md')}
             <div class="stp-post-main">
                 <div class="stp-post-head"><b ${authorLink(it)}>${esc(name)}</b>${!isUser(it.from) ? ' <i class="fa-solid fa-circle-check stp-verified"></i>' : ''} <span class="stp-muted">${esc(handle)} · ${esc(when)}</span></div>
                 ${it.text ? `<div class="stp-post-text">${fmt(it.text)}</div>` : ''}
                 ${it.image ? photo(it, 'stp-photo-wide') : ''}
                 <div class="stp-post-stats">
-                    <span><i class="fa-regular fa-comment"></i> ${compact(it.replies)}</span>
+                    <span><i class="fa-regular fa-comment"></i> ${compact(comments)}</span>
                     <span><i class="fa-solid fa-retweet"></i> ${compact(it.reposts)}</span>
                     <span><i class="fa-regular fa-heart"></i> ${compact(it.likes)}</span>
                     <span><i class="fa-solid fa-chart-simple"></i> ${compact((it.likes || 1) * 37)}</span>
@@ -53,14 +57,16 @@ export function renderPost(it) {
     }
 
     if (it.app === 'instagram') {
-        const comments = (it.comments ?? []).map(cm => `<div class="stp-ig-comment"><b>${esc(cm.user)}</b> ${esc(cm.text)}</div>`).join('');
+        const preview = detail ? '' : threadOf(it).filter(c => !c.replyTo).slice(0, 2).map(cm => `<div class="stp-ig-comment"><b>${esc(cm.mine ? userName() : cm.handle || cm.author)}</b> ${esc(cm.text)}</div>`).join('');
+        const viewAll = !detail && it.status !== 'pending' ? `<button class="stp-link-btn stp-ig-viewall" ${open}>${comments ? `View all ${compact(comments)} comments` : 'Add a comment…'}</button>` : '';
         return `<article class="stp-post stp-post-ig">
             <div class="stp-post-head stp-ig-head"><span class="stp-ig-ring">${avatar(it.from, 'sm')}</span> <b ${authorLink(it)}>${esc(handle || name)}</b><i class="fa-solid fa-ellipsis stp-muted stp-ml-auto"></i></div>
             ${photo({ ...it, image: it.image || 'a photo' }, 'stp-photo-square')}
-            <div class="stp-ig-actions"><i class="fa-regular fa-heart"></i><i class="fa-regular fa-comment"></i><i class="fa-regular fa-paper-plane"></i><i class="fa-regular fa-bookmark stp-ml-auto"></i></div>
+            <div class="stp-ig-actions"><i class="fa-regular fa-heart"></i><i class="fa-regular fa-comment" ${open}></i><i class="fa-regular fa-paper-plane"></i><i class="fa-regular fa-bookmark stp-ml-auto"></i></div>
             <div class="stp-post-likes">${compact(it.likes)} likes</div>
             ${it.text ? `<div class="stp-post-text"><b>${esc(handle || name)}</b> ${fmt(it.text)}</div>` : ''}
-            ${comments}
+            ${preview}
+            ${viewAll}
             <div class="stp-muted stp-small">${esc(when)}</div>
             ${queuedBadge(it, 'Posts with your next reply')}
         </article>`;
@@ -68,20 +74,20 @@ export function renderPost(it) {
 
     const uname = handle || `u/${String(name).replace(/\s+/g, '_').toLowerCase()}`;
     if (it.postType === 'comment') {
-        return `<article class="stp-post stp-post-reddit">
+        return `<article class="stp-post stp-post-reddit ${open ? 'stp-tappable' : ''}" ${open}>
             <div class="stp-muted stp-small"><b class="stp-reddit-sub">${esc(it.sub || 'r/all')}</b> · ${esc(uname)} commented · ${esc(when)}</div>
             ${it.parent ? `<div class="stp-reddit-parent"><i class="fa-solid fa-reply fa-flip-horizontal"></i> ${esc(it.parent)}</div>` : ''}
             <div class="stp-post-text">${fmt(it.text)}</div>
-            <div class="stp-post-stats"><span class="stp-vote"><i class="fa-solid fa-circle-up"></i> ${compact(it.upvotes)} <i class="fa-regular fa-circle-down"></i></span></div>
+            <div class="stp-post-stats"><span class="stp-vote"><i class="fa-solid fa-circle-up"></i> ${compact(it.upvotes)} <i class="fa-regular fa-circle-down"></i></span>${comments ? `<span><i class="fa-regular fa-comment"></i> ${compact(comments)}</span>` : ''}</div>
             ${queuedBadge(it, 'Posts with your next reply')}
         </article>`;
     }
-    return `<article class="stp-post stp-post-reddit">
+    return `<article class="stp-post stp-post-reddit ${open ? 'stp-tappable' : ''}" ${open}>
         <div class="stp-muted stp-small"><b class="stp-reddit-sub">${esc(it.sub || 'r/all')}</b> · Posted by ${esc(uname)} · ${esc(when)}</div>
         ${it.title ? `<div class="stp-reddit-title">${esc(it.title)}</div>` : ''}
         ${it.text ? `<div class="stp-post-text">${fmt(it.text)}</div>` : ''}
         ${it.image ? photo(it, 'stp-photo-wide') : ''}
-        <div class="stp-post-stats"><span class="stp-vote"><i class="fa-solid fa-circle-up"></i> ${compact(it.upvotes)} <i class="fa-regular fa-circle-down"></i></span><span><i class="fa-regular fa-comment"></i> ${compact(it.commentCount)}</span><span><i class="fa-solid fa-share"></i> Share</span></div>
+        <div class="stp-post-stats"><span class="stp-vote"><i class="fa-solid fa-circle-up"></i> ${compact(it.upvotes)} <i class="fa-regular fa-circle-down"></i></span><span><i class="fa-regular fa-comment"></i> ${compact(comments)}</span><span><i class="fa-solid fa-share"></i> Share</span></div>
         ${queuedBadge(it, 'Posts with your next reply')}
     </article>`;
 }
@@ -156,6 +162,72 @@ function feedView(app) {
         </div>`;
 }
 
+// ------------------------------------------------------------------ comments
+
+function commentRow(post, c, depth) {
+    const thread = threadOf(post);
+    const to = c.replyTo ? thread.find(x => x.id === c.replyTo) : null;
+    const name = c.mine ? userName() : c.author;
+    const link = !c.mine && c.known ? `class="stp-author" data-act="open-profile" data-app="${esc(post.app)}" data-name="${esc(c.author)}"` : '';
+    return `<div class="stp-comment ${depth ? 'stp-comment-reply' : ''} ${c.mine ? 'stp-mine' : ''}">
+        ${avatar(c.mine ? userName() : c.author, 'sm')}
+        <div class="stp-comment-main">
+            <div class="stp-comment-head"><b ${link}>${esc(name)}</b>${c.handle && !c.mine ? ` <span class="stp-muted">${esc(c.handle)}</span>` : ''}${sameName(c.author, post.from) && !c.mine ? ' <span class="stp-op">OP</span>' : ''} <span class="stp-muted">· ${esc(ago(c.time))}</span></div>
+            ${to && depth ? `<div class="stp-replying">Replying to <b>${esc(to.mine ? 'you' : to.author)}</b></div>` : ''}
+            <div class="stp-comment-text">${fmt(c.text)}</div>
+            <div class="stp-comment-actions">
+                <button data-act="comment-reply" data-id="${esc(c.id)}"><i class="fa-regular fa-comment"></i> Reply</button>
+                <button data-act="comment-like" data-id="${esc(c.id)}" class="${c.liked ? 'stp-liked' : ''}"><i class="fa-${c.liked ? 'solid' : 'regular'} fa-heart"></i> ${compact((c.likes || 0) + (c.liked ? 1 : 0))}</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+/** Top-level comments in order, each followed by its whole reply chain. */
+function threadHtml(post) {
+    const thread = threadOf(post);
+    const ids = new Set(thread.map(c => c.id));
+    const children = new Map();
+    for (const c of thread) {
+        const parent = c.replyTo && ids.has(c.replyTo) ? c.replyTo : null;
+        if (!children.has(parent)) children.set(parent, []);
+        children.get(parent).push(c);
+    }
+    const out = [];
+    const walk = (c, depth) => {
+        out.push(commentRow(post, c, depth));
+        for (const kid of (children.get(c.id) ?? []).sort((a, b) => a.time - b.time)) walk(kid, Math.min(depth + 1, 1));
+    };
+    for (const top of (children.get(null) ?? []).sort((a, b) => a.time - b.time)) walk(top, 0);
+    return out.join('');
+}
+
+function postView(app) {
+    const post = state().items.find(x => x.id === ui.params.id);
+    if (!post) return `${header('Post')}${empty('fa-regular fa-comment', 'Post not found')}`;
+    const busy = isBusy(`comments:${post.id}`);
+    const thread = threadOf(post);
+    const replyingTo = ui.params.replyTo ? thread.find(c => c.id === ui.params.replyTo) : null;
+    const key = `comment:${post.id}`;
+    const title = app === 'reddit' ? esc(post.sub || 'Reddit') : app === 'instagram' ? 'Comments' : 'Post';
+    const list = thread.length
+        ? `<div class="stp-thread-list">${threadHtml(post)}</div>${busy ? '<div class="stp-comment-typing stp-shimmer">Replies coming in…</div>' : moreButton('comments-more', busy, 'More comments', `data-id="${esc(post.id)}"`)}`
+        : busy ? '<div class="stp-comment-typing stp-shimmer">Loading comments…</div>' : `<div class="stp-center stp-pad">${button('Load comments', 'comments-load', { variant: 'soft', icon: 'fa-regular fa-comments', attrs: `data-id="${esc(post.id)}"` })}</div>`;
+    return `${header(title)}
+        <div class="stp-scroll stp-post-detail" data-scroll="post:${esc(post.id)}">
+            ${renderPost(post, { detail: true })}
+            <div class="stp-section-label"><span>${thread.length ? `${thread.length} comment${thread.length === 1 ? '' : 's'}` : 'Comments'}</span></div>
+            ${list}
+        </div>
+        ${replyingTo ? `<div class="stp-attach-bar stp-replying-bar"><i class="fa-solid fa-reply"></i><span>Replying to <b>${esc(replyingTo.mine ? 'yourself' : replyingTo.author)}</b></span><button class="stp-icon-btn" data-act="comment-cancel-reply" title="Cancel"><i class="fa-solid fa-xmark"></i></button></div>` : ''}
+        <div class="stp-composer">
+            ${avatar(userName(), 'sm')}
+            <input class="stp-input stp-composer-input" data-draft="${esc(key)}" data-enter="comment-send" placeholder="${replyingTo ? `Reply to ${esc(replyingTo.mine ? 'yourself' : replyingTo.author)}…` : 'Add a comment…'}" value="${esc(ui.drafts[key] ?? '')}" ${busy ? 'disabled' : ''}>
+            <button class="stp-send" data-act="comment-send" title="Post comment" ${busy ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
+        </div>
+        <div class="stp-composer-hint">People reply right away</div>`;
+}
+
 function makeApp(app) {
     const meta = META[app];
     return {
@@ -164,7 +236,15 @@ function makeApp(app) {
         icon: meta.icon,
         color: meta.color,
         group: 'Social',
+        back() {
+            if (ui.view !== 'post') return false;
+            ui.view = null;
+            ui.params = ui.params.back ?? {};
+            changed();
+            return true;
+        },
         render() {
+            if (ui.view === 'post') return postView(app);
             const tab = ui.params.tab ?? 'feed';
             const busy = isBusy(`feed:${app}`);
             const refresh = tab === 'feed'
@@ -181,7 +261,55 @@ export const xApp = makeApp('x');
 export const instagramApp = makeApp('instagram');
 export const redditApp = makeApp('reddit');
 
+function postById(id) {
+    return state().items.find(x => x.id === id);
+}
+
 export const socialActions = {
+    'post-open': el => {
+        const post = postById(el.dataset.id);
+        if (!post) return;
+        const back = { ...ui.params };
+        navigate(post.app, 'post', { id: post.id, back });
+        if (!threadOf(post).length && settings().autoComments !== false) generateComments(post);
+    },
+    'comments-load': el => {
+        const post = postById(el.dataset.id);
+        if (post) generateComments(post);
+    },
+    'comments-more': el => {
+        const post = postById(el.dataset.id);
+        if (post) generateComments(post);
+    },
+    'comment-reply': el => {
+        ui.params.replyTo = el.dataset.id;
+        changed();
+        setTimeout(() => document.querySelector(`#stp-device [data-draft^="comment:"]`)?.focus(), 30);
+    },
+    'comment-cancel-reply': () => {
+        ui.params.replyTo = null;
+        changed();
+    },
+    'comment-like': el => {
+        const post = postById(ui.params.id);
+        const c = post && threadOf(post).find(x => x.id === el.dataset.id);
+        if (!c) return;
+        c.liked = !c.liked;
+        saveState();
+        changed();
+    },
+    'comment-send': () => {
+        const post = postById(ui.params.id);
+        if (!post) return;
+        const key = `comment:${post.id}`;
+        const text = draft(key);
+        if (!text) return;
+        const replyTo = ui.params.replyTo || null;
+        clearDrafts(key);
+        ui.params.replyTo = null;
+        ui.scrollBottom = true;
+        addComment(post, text, replyTo);
+    },
     'open-profile': el => {
         ui.params = { tab: 'profiles', person: el.dataset.name };
         changed();

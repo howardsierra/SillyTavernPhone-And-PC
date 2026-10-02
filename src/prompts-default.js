@@ -10,6 +10,7 @@ export const PROMPT_LABELS = {
     phoneOnly: 'Phone-only roleplay instructions',
     reply: 'Reply to a text (instant delivery)',
     replyGroup: 'Reply in a group text',
+    comments: 'Comments on a post (and replies to yours)',
     news: 'News: headlines',
     live: 'Live: who is streaming',
     liveChat: 'Live: a stream\'s chat',
@@ -102,6 +103,20 @@ ${JSON_ONLY}
   "dating": {"onApp": false, "bio": "...", "prompts": [{"q": "...", "a": "..."}], "photo": "profile photo description", "lookingFor": "..."}
 }
 Include 6-10 payments (Venmo-style, between {{name}} and friends, never involving {{user}}) and 4-6 orders, newest first. Set dating.onApp to true only if {{name}} would plausibly have a dating profile right now. "ago" uses short forms like 5m, 3h, 2d.]`,
+
+    comments: `[OOC: Pause the roleplay. On {{appName}}, {{author}} posted:
+"{{post}}"
+
+Comments so far:
+{{thread}}
+
+{{task}}
+People from the story who might comment (use their exact names, in character): {{people}}. Everyone else is an invented account with a believable name and handle. Keep comments short and natural for {{appName}}. ${WORLD}
+
+{{context}}
+
+${JSON_ONLY}
+{"comments": [{"author": "name", "handle": "@handle", "text": "...", "replyTo": "name of the person this answers, or empty", "likes": 3}]}]`,
 
     news: `[OOC: Pause the roleplay. Write the news feed {{user}} sees on their phone right now: 8 articles from the world of the story — local news, world events, gossip, entertainment, weather, sports or the in-world equivalent. Where it fits, include stories touching on recent story events or people (rumours, sightings, consequences), but keep most of it everyday news that makes the world feel alive. ${WORLD}
 {{more}}

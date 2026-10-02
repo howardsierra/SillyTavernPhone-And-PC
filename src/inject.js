@@ -1,6 +1,7 @@
 // Builds the phone context that is injected into every prompt.
 import { PROMPT_KEY, ctx, hasChat, isChatCharacter, isJustSent, isUser, liveItems, money, promptText, settings, state, sub, userName } from './core.js';
 import { isDelivered, orderStepLabel, ratedStats, requestStatus } from './derived.js';
+import { commentContext } from './comments.js';
 import { isQuietGenerating } from './gen.js';
 import { APP_NAMES } from './parse.js';
 import { sameName } from './util.js';
@@ -104,6 +105,10 @@ export function updateInjection() {
             parts.push(`[Recent public social media posts]\n${lines.join('\n')}`);
         }
     }
+
+    // Comment threads: what {{user}} and story characters said under posts.
+    const commentLines = commentContext(items.filter(x => x.kind === 'post' && x.thread?.length));
+    if (commentLines.length) parts.push(`[Recent comments on social media]\n${commentLines.join('\n')}`);
 
     // Spark: matches with people in the story and {{user}}'s likes.
     const st = state();

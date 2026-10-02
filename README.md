@@ -16,7 +16,7 @@ An immersion extension that gives `{{user}}` an in-story **phone** (or **PC**). 
 | --- | --- |
 | 💬 **Messages** | Text anyone and get replies right away. Group chats, photos, voice messages, emoji reactions, read receipts, and the occasional spam or scam text from an unknown number. ↩ quotes a text into your chat reply. |
 | 📞 **Phone** | Recent calls, missed calls, voicemail transcripts, contacts. Calling someone connects with your next reply. |
-| 𝕏 **X**, 📸 **Instagram**, 👽 **Reddit** | **Feed**: your home timeline (story characters mixed with everyone else), with refresh and load more. **Profiles**: peek at anyone's whole profile feed, then load older posts. Tap a name to open their profile. Post as yourself. |
+| 𝕏 **X**, 📸 **Instagram**, 👽 **Reddit** | **Feed**: your home timeline (story characters mixed with everyone else), with refresh and load more. **Profiles**: peek at anyone's whole profile feed, then load older posts. Tap a name to open their profile. Post as yourself. **Tap any post to open its comments**, then reply to the post or to a specific comment. People answer right away, the poster included, and story characters stay in character and remember the exchange. |
 | 📺 **Live** | Twitch-style streams, sometimes by people from your story. Watch, chat, and donate from Pocket. The streamer reads your messages. |
 | 📰 **News** | Headlines from your story's world, sometimes about what's been happening. Open an article, or load more stories. |
 | 📅 **Calendar** | Plans and reminders. Invite people and they're told (and can answer). Characters can add plans too. |
