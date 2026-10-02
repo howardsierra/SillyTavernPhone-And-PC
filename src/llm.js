@@ -26,7 +26,8 @@ function history(limit) {
         .map(m => ({ role: m.is_user ? 'user' : 'assistant', content: `${m.name}: ${m.mes}` }));
 }
 
-async function viaProfile(profileId, prompt, maxTokens) {
+/** The prompt as chat messages: who's who, the phone's state, recent chat, then the request. */
+function buildMessages(prompt) {
     const c = ctx();
     const s = settings();
     const cards = chatCharacters().slice(0, 4).map(cardFor).filter(Boolean);
@@ -38,15 +39,54 @@ async function viaProfile(profileId, prompt, maxTokens) {
         persona ? `<${userName()}'s persona>\n${persona}\n</${userName()}'s persona>` : '',
         phone,
     ].filter(Boolean).join('\n\n');
-    const messages = [
+    return [
         { role: 'system', content: c.substituteParams(system) },
         ...history(Number(s.phoneHistory) || 30),
         { role: 'user', content: prompt },
     ];
+}
+
+async function viaProfile(profileId, prompt, maxTokens) {
+    const c = ctx();
+    const messages = buildMessages(prompt);
     const service = c.ConnectionManagerRequestService;
     const built = service.constructPrompt ? service.constructPrompt(messages, profileId) : messages;
-    const result = await service.sendRequest(profileId, built, maxTokens, { includePreset: true, includeInstruct: true });
+    const result = await service.sendRequest(profileId, built, maxTokens, { includePreset: true, includeInstruct: true, stream: settings().streamPhone !== false });
+    return readResult(result);
+}
+
+/** A request result: plain text, { content }, or a stream to read to the end. */
+async function readResult(result) {
+    if (typeof result === 'function') {
+        let text = '';
+        for await (const chunk of result()) text = chunk?.text ?? text;
+        return text;
+    }
     return typeof result === 'string' ? result : (result?.content ?? '');
+}
+
+function canStream() {
+    const c = ctx();
+    return settings().streamPhone !== false && c.mainApi === 'openai'
+        && typeof c.ChatCompletionService?.presetToGeneratePayload === 'function' && typeof c.getChatCompletionModel === 'function';
+}
+
+/**
+ * Chat Completion APIs: send the request through the current connection, streamed
+ * like a chat reply. SillyTavern's own quiet prompts aren't streamed, and some
+ * providers and proxies drop long non-streamed requests ("Bad Gateway").
+ */
+async function viaStream(prompt, maxTokens) {
+    const c = ctx();
+    const service = c.ChatCompletionService;
+    const payload = await service.presetToGeneratePayload({}, {}, {
+        messages: buildMessages(prompt),
+        model: c.getChatCompletionModel(),
+        max_tokens: maxTokens,
+        stream: true,
+    });
+    payload.stream = true;
+    return readResult(await service.sendRequest(payload, true));
 }
 
 // SillyTavern runs one generation at a time: quiet prompts started while the chat
@@ -124,6 +164,15 @@ async function generate(prompt, { asCharacter = null, maxTokens = null } = {}) {
     const profileId = s.phoneProfile;
     if (profileId && c.ConnectionManagerRequestService && phoneProfiles().some(p => p.id === profileId)) {
         return stripReasoning(await viaProfile(profileId, prompt, tokens));
+    }
+    if (canStream()) {
+        try {
+            const text = stripReasoning(await viaStream(prompt, tokens));
+            if (text) return text;
+            console.warn('[Phone] streamed request came back empty; trying a quiet prompt');
+        } catch (e) {
+            console.warn('[Phone] streamed request failed; trying a quiet prompt', e);
+        }
     }
     let forceChId = null;
     if (c.groupId && asCharacter) {

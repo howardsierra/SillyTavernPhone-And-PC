@@ -177,7 +177,8 @@ Instant replies with the chat as memory, group texts, reactions, voice messages,
 
 ## Notes
 
-- **"Bad Gateway" (502), 503, 504 or rate-limit errors** come from your API connection (the provider or a proxy in front of it), not from the phone. Phone requests aren't streamed, so slow or flaky connections hit them more than chat replies. The phone retries them automatically (3 tries, with a pause), and spaces requests out a little. If it keeps happening, lower *Peek response length*, or pick a different *Connection for the phone*.
+- **"Bad Gateway" (502), 503, 504 or rate-limit errors** come from your API connection (the provider or a proxy in front of it), not from the phone. Some OpenAI-compatible providers drop long requests that aren't streamed, and SillyTavern's built-in background ("quiet") requests never are. So with a Chat Completion API, the phone **streams its requests** like a chat reply (*Stream phone requests like chat replies*, on by default). If streaming fails, it falls back to a quiet request. Failed requests are retried automatically (3 tries, with a pause), and requests are spaced out a little. If it keeps happening, lower *Peek response length*, or pick a different *Connection for the phone*.
+- Streamed phone requests are built by the phone itself: the character card(s), your persona, the phone's state and the recent chat. They don't include your Chat Completion preset's prompts or World Info. Turn streaming off to use SillyTavern's full prompt instead.
 - Phone requests (comments, replies, peeks, feeds…) run one at a time and wait for the chat to finish generating, so tapping several things at once queues them instead of failing. A comment you send while others are still loading gets answered right after.
 
 - All phone data is stored in the chat's metadata, so every chat has its own phone.
