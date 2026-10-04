@@ -2,26 +2,12 @@
 // - "fresh": the chat has no intro message → only the character card, nothing else
 // - "intro": only the intro message so far → the card plus that intro
 // - "story": an ongoing chat → the card plus the chat so far
-import { chatCharacters, ctx, isUser, persona, settings, userName } from './core.js';
+import { chatCharacters, ctx, introMessages, isUser, persona, settings, userName } from './core.js';
 import { sameName } from './util.js';
 
 const CARD_LIMIT = 2000;
 
-/**
- * The intro: every character message before {{user}}'s first one (the greeting,
- * or several in a group chat). Phone traffic doesn't count.
- * @param {object[]} chat
- * @returns {Set<object>} the intro messages
- */
-export function introMessages(chat = ctx().chat ?? []) {
-    const out = new Set();
-    for (const m of chat) {
-        if (!m || m.is_system) continue;
-        if (m.is_user || m.extra?.stp_phone) break;
-        out.add(m);
-    }
-    return out;
-}
+export { introMessages } from './core.js';
 
 /** "Ignore intro messages": the phone acts as if the greeting isn't there. */
 export function ignoringIntro() {

@@ -275,17 +275,47 @@ export function makeAnchor(mesId) {
     return { hash: mesHash(m), mesId, swipeId: m.swipe_id ?? 0 };
 }
 
-function isLive(item, index) {
+/**
+ * The intro: every character message before {{user}}'s first one (the greeting,
+ * or several in a group chat). Phone traffic doesn't count as {{user}} speaking.
+ * @param {object[]} chat
+ * @returns {Set<object>} the intro messages
+ */
+export function introMessages(chat = ctx().chat ?? []) {
+    const out = new Set();
+    for (const m of chat) {
+        if (!m || m.is_system) continue;
+        if (m.is_user || m.extra?.stp_phone) break;
+        out.add(m);
+    }
+    return out;
+}
+
+/** Chat positions of the intro, when "Ignore intro messages" is on (else empty). */
+function ignoredIntroIndexes() {
+    if (!settings().ignoreIntro) return null;
+    const chat = ctx().chat ?? [];
+    const intro = introMessages(chat);
+    if (!intro.size) return null;
+    const out = new Set();
+    chat.forEach((m, i) => intro.has(m) && out.add(i));
+    return out;
+}
+
+function isLive(item, index, ignored) {
     if (!item.anchor) return true;
     const i = index.get(item.anchor.hash);
     if (i === undefined) return false;
     item.anchor.mesId = i;
+    // Texts, posts and so on written in an ignored intro don't exist for the phone.
+    if (ignored?.has(i)) return false;
     return true;
 }
 
 export function liveItems() {
     const index = liveIndex();
-    return state().items.filter(it => isLive(it, index));
+    const ignored = ignoredIntroIndexes();
+    return state().items.filter(it => isLive(it, index, ignored));
 }
 
 /** Messages edited or continued keep their phone items. */

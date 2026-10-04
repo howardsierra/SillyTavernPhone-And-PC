@@ -213,7 +213,17 @@ Peeks, Locate, store searches, restaurants, dating profiles and Rated feeds adap
 | **Intro message only** | The character card plus the intro message that's actually showing. Other greetings from the card are never used. |
 | **Ongoing chat** | The character card plus everything that's happened so far. |
 
-**Ignore intro messages** (in the phone's Settings → Story context, or Extensions → Phone & PC) makes the phone act as if the greeting isn't there. The greeting is every character message before your first one, so in a group chat that's each member's greeting. Peeks, feeds, replies and time skips then use the character card plus what has happened *since*. The intro is left out of the chat history sent with phone requests, but your chat and normal replies aren't changed.
+**Ignore intro messages** (in the phone's Settings → Story context, or Extensions → Phone & PC) makes the phone act as if the intro isn't there. That covers **every** intro:
+- the greeting and all its alternate greetings (the swipes on the first message);
+- each member's greeting in a group chat;
+- narrator lines and any other character messages before your first message.
+
+When it's on:
+- the intro is left out of every phone request: peeks, feeds, text replies, comments, time skips;
+- texts, posts and other phone activity written inside the intro don't show up on the phone or in its story context;
+- generated content uses the character card plus whatever happened since.
+
+Your chat and normal replies aren't changed.
 
 Custom prompts can place this anywhere with `{{context}}`. If they leave it out, it's added at the end.
 
