@@ -37,6 +37,7 @@ An immersion extension that gives `{{user}}` an in-story **phone** (or **PC**). 
 | ⭐ **Rated** *(18+, off by default)* | An anonymous app where adults post photos of themselves to be rated 1–10. Rate posts, post yourself, read comments, and maybe spot a character who's secretly posting. |
 | 💎 **Velvet** *(18+, off by default)* | A subscription content app. Discover creators (sometimes someone from your story), pay a monthly sub from Pocket to unlock their posts, tip them, or open **your own page**: set a price, post photos, gain subscribers as the story goes on, and cash out to Pocket. Characters you subscribe to know it's you. |
 | ✉️ **Mail** · 📁 **Files** · 🎮 **Games** *(PC only)* | See [Phone vs PC](#phone-vs-pc). |
+| ⏩ **Time Skip** | Skip ahead in time and see what landed on the phone meanwhile; fill your own device. See [Time skip](#time-skip). |
 | ⚙️ **Settings** | Phone or PC, dark/light/auto theme, wallpapers (including a custom image), starting balance. |
 
 Deliveries move forward as the story does (food arrives within a few messages, packages take longer), and characters are told when something arrives at their door.
@@ -108,6 +109,24 @@ Open something that lives on the other device (say, a Pocket notification on the
 
 On **their PC** (swap with the avatar pill on the taskbar), Mail, Files and Games show that character's inbox, their documents and downloads, and their game library, hours played included. What you read there goes into the prompt the same way as their phone.
 
+## Time skip
+
+Open the **Time Skip** app (on both the phone and the PC), or type `/phone timeskip 3 days`.
+
+1. Pick how long: an hour, overnight, a day, a few days, a week, a month. You can also type your own ("2 weeks") and add what happens meanwhile ("User is away on a trip").
+2. Everything already on the device moves back by that much: yesterday's texts now say "1d ago".
+3. The model writes what arrived on your phone while you were away: texts from people in the story, missed calls and voicemails, posts, payments, plans. These are spread across the skipped time, arrive as notifications, and are kept in the chat as context.
+4. A narrator note like *"⏩ A day later. Saturday morning; the rain finally stopped."* goes into the chat, so the story moves on too. You can turn this off in the app.
+
+## Fill my phone / PC
+
+Want your persona's device to feel lived-in? Tap **Fill my phone** (or **Fill my PC**). It's in the Time Skip app and in Settings, or type `/phone fill`. Everything is generated from your persona and the story:
+
+- **Phone:** texts with people from your own life (never invented history with the main characters), a call log, a camera roll, notes, your X / Instagram / Reddit posts, music and browsing history.
+- **PC:** an inbox, a game library, documents, browsing history, music and posts.
+
+It takes a few requests, and a progress bar shows where it's at.
+
 ## Their phone
 
 Tap the **Your phone ⇄** pill on the home screen to swap to a character's phone. On the PC, use the avatar button in the title bar. In a group chat, you pick whose. The device takes on their picture as the wallpaper and opens on their lock screen, and a small avatar in the status bar reminds you whose phone you're holding. Tap the pill or that avatar again to swap back.
@@ -175,7 +194,7 @@ document.addEventListener('stphone-ready', e => e.detail.registerImageProvider(/
 | Photos | Generator, auto-develop, character appearance, use images from other extensions, photo prompt template |
 | Pocket | Currency symbol, starting balance |
 | Adult (18+) | Enable Rated and Velvet (asks for confirmation), blur photos until tapped, reveal which character is behind an anonymous post |
-| Prompts | Edit every prompt: tag instructions, phone-only roleplay, profile feeds, home feeds, browser, music, the rest of a peek, locate, store search, restaurants, dating profiles, Chord servers and chat, channels and their posts, Velvet creators and posts, their phone (texts, calls, notes, camera roll), Mail (inbox and replies), their PC (inbox, files), Games, Rated feed and comments |
+| Prompts | Edit every prompt: tag instructions, phone-only roleplay, profile feeds, home feeds, browser, music, the rest of a peek, locate, store search, restaurants, dating profiles, Chord servers and chat, channels and their posts, Velvet creators and posts, their phone (texts, calls, notes, camera roll), Mail (inbox and replies), their PC (inbox, files), Games, time skips, Rated feed and comments |
 
 ## What generated content is based on
 

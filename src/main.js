@@ -13,6 +13,7 @@ import { navigate, resetUi, ui } from './ui/state.js';
 import { setOwner } from './apps/theirs.js';
 import { commentsOnMyPost } from './comments.js';
 import { confirmReset } from './reset.js';
+import { fillDevice, parseDuration, timeSkip } from './apps/time.js';
 import { applyChatHiding, currentContact, isPhoneOnly, setPhoneOnly } from './turn.js';
 import { maybeSpam } from './apps/extras.js';
 import { debounce, norm, sameName } from './util.js';
@@ -138,10 +139,16 @@ function registerSlashCommand() {
     try {
         c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
             name: 'phone',
-            helpString: `Open, close or toggle the in-story phone, jump to an app, or switch this chat to phone-only roleplay (only) and back (story). /phone reset gives this chat a brand-new phone; /phone clear removes generated content only. Usage: /phone [open|close|toggle|pc|phone|only|story|reset|clear|${ALL_APPS.map(a => a.id).join('|')}]`,
+            helpString: `Open, close or toggle the in-story phone, jump to an app, or switch this chat to phone-only roleplay (only) and back (story). /phone reset gives this chat a brand-new phone; /phone clear removes generated content only. Usage: /phone [open|close|toggle|pc|phone|only|story|reset|clear|timeskip <how long>|fill|${ALL_APPS.map(a => a.id).join('|')}]`,
             callback: (_args, value) => {
                 const v = norm(value);
-                if (v === 'reset' || v === 'reset all') {
+                if (v.startsWith('timeskip') || v.startsWith('skip')) {
+                    const ms = parseDuration(v.replace(/^(timeskip|skip)\s*/, '') || '1 day');
+                    if (ms) timeSkip(ms, { chatNote: settings().skipChatNote !== false });
+                    else toastr.info('Usage: /phone timeskip 3 days', '⏩ Time skip');
+                } else if (v === 'fill' || v === 'fill phone' || v === 'fill pc') {
+                    fillDevice(v === 'fill pc' ? 'pc' : v === 'fill phone' ? 'phone' : undefined);
+                } else if (v === 'reset' || v === 'reset all') {
                     confirmReset('all');
                 } else if (v === 'reset generated' || v === 'clear') {
                     confirmReset('generated');
@@ -172,7 +179,7 @@ function registerSlashCommand() {
 
 function exposeApi() {
     const api = {
-        version: '0.8.5',
+        version: '0.9.0',
         registerImageProvider: (id, label, fn) => {
             registerImageProvider(id, label, fn);
             syncSettingsUi();

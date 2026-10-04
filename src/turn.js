@@ -113,7 +113,7 @@ function userAvatar() {
 }
 
 /** Appends a message to the chat like SillyTavern does, flagged as phone traffic. */
-async function pushMessage(message) {
+export async function pushMessage(message) {
     const c = ctx();
     const ev = c.eventTypes ?? c.event_types;
     const full = {
@@ -139,7 +139,7 @@ async function pushMessage(message) {
 }
 
 /** The chat character a reply is filed under (group chats need a real member). */
-function speakerFor(contact) {
+export function speakerFor(contact) {
     const c = ctx();
     const members = chatCharacters();
     const member = members.find(n => sameName(n, contact));

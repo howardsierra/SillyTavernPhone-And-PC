@@ -28,7 +28,7 @@ function addressFor(name) {
     return `${norm(name).replace(/[^a-z0-9]+/g, '.') || 'someone'}@mail.com`;
 }
 
-async function loadInbox({ more = false } = {}) {
+export async function loadInbox({ more = false } = {}) {
     const who = owner();
     const list = mailbox();
     const data = who
@@ -332,7 +332,7 @@ function library() {
     return state().games ?? null;
 }
 
-async function loadGames() {
+export async function loadGames() {
     const who = owner();
     const data = await runJson('games', {
         who: who ? `${userName()} snoops through ${who}'s PC and` : userName(),

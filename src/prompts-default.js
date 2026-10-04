@@ -27,6 +27,7 @@ export const PROMPT_LABELS = {
     devMail: 'Their PC: a character\'s inbox',
     devFiles: 'Their PC: a character\'s files',
     games: 'Games (PC): game library and friends',
+    timeskip: 'Time skip: what happens on {{user}}\'s phone meanwhile',
     news: 'News: headlines',
     live: 'Live: who is streaming',
     liveChat: 'Live: a stream\'s chat',
@@ -266,6 +267,12 @@ ${JSON_ONLY}
 
 ${JSON_ONLY}
 {"games": [{"title": "...", "genre": "...", "hours": 120, "lastPlayed": "2d", "cover": "cover art description"}], "friends": [{"name": "...", "status": "Playing <game> | Online | Away | Offline 3h"}]}]`,
+
+    timeskip: `[OOC: Pause the roleplay. TIME SKIP: {{duration}} pass.{{note}}
+
+Write what arrives on {{user}}'s phone during that time, as phone tags ONLY (no narration). Make it feel like real life went on: people from the story ({{people}}) reacting to recent events, checking in, making plans, arguing, flirting or sending photos, each in their own texting style and consistent with the story — plus maybe someone from {{user}}'s wider life. Spread it across the whole time and pick only what fits: several texts (<sms from="Name">…</sms>, one bubble per line, image="…" for a photo), maybe a missed call with a voicemail (<call from="Name" status="missed">…</call>), a payment or request, a post (<post app="x|instagram|reddit" from="Name">…</post>), a location share or a plan. Quieter stretches can have less. {{user}} doesn't use the phone during the skip: never write anything from {{user}}.
+
+Start with one line <timeskip>a short sentence on how the world has moved on (time of day, weather, mood) — nothing about what {{user}} did</timeskip>, then the tags.]`,
 
     news: `[OOC: Pause the roleplay. Write the news feed {{user}} sees on their phone right now: 8 articles from the world of the story — local news, world events, gossip, entertainment, weather, sports or the in-world equivalent. Where it fits, include stories touching on recent story events or people (rumours, sightings, consequences), but keep most of it everyday news that makes the world feel alive. ${WORLD}
 {{more}}

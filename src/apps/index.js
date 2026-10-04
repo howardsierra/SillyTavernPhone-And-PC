@@ -16,9 +16,10 @@ import shop from './shop.js';
 import { instagramApp, redditApp, socialActions, xApp } from './social.js';
 import spark from './spark.js';
 import { THEIR_APPS, theirActions } from './theirs.js';
+import { timeApp } from './time.js';
 import velvet from './velvet.js';
 
-export const ALL_APPS = [phone, messages, browserApp, musicApp, xApp, instagramApp, redditApp, chord, channels, liveApp, spark, pay, shop, food, newsApp, calendarApp, locateApp, photosApp, notesApp, settingsApp, rated, velvet, mailApp, filesApp, gamesApp];
+export const ALL_APPS = [phone, messages, browserApp, musicApp, xApp, instagramApp, redditApp, chord, channels, liveApp, spark, pay, shop, food, newsApp, calendarApp, locateApp, photosApp, notesApp, settingsApp, rated, velvet, mailApp, filesApp, gamesApp, timeApp];
 
 /** PC-only apps never show up on the phone. */
 const PC_ONLY = new Set(['mail', 'files', 'games']);
@@ -26,7 +27,7 @@ const PC_ONLY = new Set(['mail', 'files', 'games']);
 export const DOCK = ['phone', 'messages', 'browser', 'music'];
 
 /** The PC's own apps, in start-menu order (websites open in the browser instead). */
-const PC_APPS = ['browser', 'mail', 'files', 'messages', 'chord', 'channels', 'games', 'music', 'calendar', 'notes', 'settings'];
+const PC_APPS = ['browser', 'mail', 'files', 'messages', 'chord', 'channels', 'games', 'music', 'calendar', 'notes', 'timeskip', 'settings'];
 
 /** Pinned to the PC's taskbar. */
 export const TASKBAR = ['browser', 'mail', 'files', 'messages', 'chord', 'games', 'music'];

@@ -4,6 +4,7 @@ import { updateInjection } from '../inject.js';
 import { avatar, header, input, sectionLabel } from '../ui/kit.js';
 import { modeCard } from './messages.js';
 import { confirmReset } from '../reset.js';
+import { fillCard } from './time.js';
 import { draft } from '../ui/state.js';
 import { SKINS, WALLPAPERS, wallpaperCss } from '../ui/theme.js';
 import { esc, toMoney } from '../util.js';
@@ -80,6 +81,8 @@ export default {
                 ${sectionLabel('This chat')}
                 <div class="stp-card stp-list-card">${modeCard()}</div>
                 <div class="stp-card stp-list-card">${toggleRow('focusPhoneOnly', 'Centre the device in phone-only mode', 'Dims the chat behind it')}</div>
+                ${sectionLabel('Your device')}
+                ${fillCard()}
                 ${sectionLabel('Reset')}
                 <div class="stp-card stp-reset-card">
                     <button class="stp-btn stp-btn-soft" data-act="reset-generated"><i class="fa-solid fa-broom"></i><span>Clear generated content</span></button>
