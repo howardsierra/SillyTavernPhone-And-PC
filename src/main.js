@@ -1,7 +1,7 @@
 // Wires everything together: SillyTavern events, the generation interceptor,
 // the slash command and the public API for other extensions.
 import { ALL_APPS } from './apps/index.js';
-import { changed, commitPending, ctx, hasChat, pruneAfterDelete, reanchor, settings, state } from './core.js';
+import { changed, commitPending, ctx, hasChat, loadPersonaModule, pruneAfterDelete, reanchor, registerPersona, settings, state } from './core.js';
 import { checkDeliveries } from './derived.js';
 import { adoptChatImage, autoImages, generateImage, registerImageProvider, unregisterImageProvider } from './images.js';
 import { updateInjection } from './inject.js';
@@ -20,6 +20,7 @@ import { debounce, norm, sameName } from './util.js';
 function onChatChanged() {
     resetUi();
     ui.typing = null;
+    if (hasChat()) registerPersona();
     if (hasChat()) scanChat();
     updateInjection();
     // Phone-only chats open straight into the conversation.
@@ -28,6 +29,18 @@ function onChatChanged() {
         if (c) navigate(c.app, 'thread', { contact: c.contact });
     }
     changed();
+}
+
+/** Switching personas signs the phone in as the new one. */
+function onPersonaChanged() {
+    if (!hasChat()) return;
+    // SillyTavern updates the name a moment after the event.
+    setTimeout(() => {
+        const now = registerPersona();
+        if (now && ui.open && settings().enabled) toastr.info(`Signed in as ${now.name}${now.title ? ` · ${now.title}` : ''}`, '📱 Phone', { timeOut: 2500 });
+        updateInjection();
+        changed();
+    }, 50);
 }
 
 function stopTyping() {
@@ -95,6 +108,7 @@ function registerEvents() {
     const ev = c.eventTypes ?? c.event_types;
     const on = (name, fn) => name && c.eventSource.on(name, fn);
     on(ev.CHAT_CHANGED, onChatChanged);
+    on(ev.PERSONA_CHANGED, onPersonaChanged);
     on(ev.MESSAGE_RECEIVED, (id, type) => {
         ui.typing = null;
         onMessage(id);
@@ -158,7 +172,7 @@ function registerSlashCommand() {
 
 function exposeApi() {
     const api = {
-        version: '0.8.4',
+        version: '0.8.5',
         registerImageProvider: (id, label, fn) => {
             registerImageProvider(id, label, fn);
             syncSettingsUi();
@@ -181,8 +195,9 @@ function exposeApi() {
     document.dispatchEvent(new CustomEvent('stphone-ready', { detail: api }));
 }
 
-export function init() {
+export async function init() {
     settings();
+    await loadPersonaModule();
     createDom();
     createSettingsPanel();
     registerEvents();

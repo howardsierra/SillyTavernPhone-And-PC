@@ -9,9 +9,5 @@
 import { init } from './src/main.js';
 
 jQuery(() => {
-    try {
-        init();
-    } catch (e) {
-        console.error('[Phone] failed to initialise', e);
-    }
+    init().catch(e => console.error('[Phone] failed to initialise', e));
 });

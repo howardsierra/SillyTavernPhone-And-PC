@@ -6144,3 +6144,8 @@
 #stp-device .stp-rated-head .stp-post-del { align-self: flex-start; }
 #stp-device .stp-tg-meta .stp-post-del { width: 22px; height: 22px; margin-right: auto; font-size: 11px; }
 #stp-device .stp-post-x .stp-post-head { padding-right: 26px; }
+
+/* Settings: the persona the device belongs to */
+#stp-device .stp-account { display: flex; align-items: flex-start; gap: 12px; }
+#stp-device .stp-account-desc { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+#stp-device .stp-account-sync { flex: none; padding: 3px 8px; border-radius: 999px; background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); font-size: 10.5px; font-weight: 700; white-space: nowrap; }

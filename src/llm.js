@@ -1,7 +1,7 @@
 // One place every phone generation goes through: replies to texts, peeks, feeds,
 // shops… Uses SillyTavern's current connection, or a Connection Manager profile
 // picked for the phone (e.g. a faster/cheaper model) with a prompt we build here.
-import { PROMPT_KEY, chatCharacters, ctx, settings, userName } from './core.js';
+import { PROMPT_KEY, chatCharacters, ctx, persona as currentPersona, settings, userName } from './core.js';
 import { cardFor } from './context.js';
 import { sameName } from './util.js';
 
@@ -31,7 +31,7 @@ function buildMessages(prompt) {
     const c = ctx();
     const s = settings();
     const cards = chatCharacters().slice(0, 4).map(cardFor).filter(Boolean);
-    const persona = String(c.powerUserSettings?.persona_description ?? '').trim();
+    const persona = currentPersona().description;
     const phone = String(c.extensionPrompts?.[PROMPT_KEY]?.value ?? '').trim();
     const system = [
         `You are continuing an interactive roleplay with ${userName()}. Write only for the other characters, never for ${userName()}. Stay in character and keep the established tone and setting.`,

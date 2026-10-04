@@ -100,8 +100,56 @@ export function userName() {
     return ctx().name1 || 'User';
 }
 
+// SillyTavern's persona module, for the current persona's avatar (loaded at start).
+let personas = null;
+export async function loadPersonaModule() {
+    try {
+        personas = await import('/scripts/personas.js');
+    } catch {
+        personas = null;
+    }
+}
+
+/** The SillyTavern persona {{user}} is using right now: name, description and picture. */
+export function persona() {
+    const c = ctx();
+    const pu = c.powerUserSettings ?? {};
+    const avatarId = personas?.user_avatar
+        || document.querySelector('#user_avatar_block .avatar-container.selected')?.getAttribute('data-avatar-id')
+        || '';
+    const desc = pu.persona_descriptions?.[avatarId] ?? {};
+    return {
+        name: userName(),
+        avatarId,
+        title: String(desc.title ?? '').trim(),
+        description: String(pu.persona_description ?? desc.description ?? '').trim(),
+        avatar: avatarId ? (c.getThumbnailUrl?.('persona', avatarId) ?? `User Avatars/${avatarId}`) : null,
+    };
+}
+
+/**
+ * Remembers the persona used in this chat. Names used earlier in the chat still
+ * count as {{user}}, so switching personas doesn't hand your old texts and posts
+ * to someone else. Returns the persona if it changed.
+ */
+export function registerPersona() {
+    const meta = ctx().chatMetadata;
+    if (!meta) return null;
+    const st = state();
+    const p = persona();
+    st.personaNames ??= [];
+    if (!st.personaNames.some(n => sameName(n, p.name))) st.personaNames.push(p.name);
+    const prev = st.persona;
+    if (prev && prev.name === p.name && prev.avatarId === p.avatarId) return null;
+    st.persona = { name: p.name, avatarId: p.avatarId, at: Date.now() };
+    saveState();
+    return prev ? p : null;
+}
+
 export function isUser(name) {
-    return sameName(name, userName()) || norm(name) === '{{user}}' || norm(name) === 'you';
+    if (sameName(name, userName()) || norm(name) === '{{user}}' || norm(name) === 'you') return true;
+    const known = ctx().chatMetadata?.[META_KEY]?.personaNames;
+    return Array.isArray(known) && known.some(n => sameName(n, name));
 }
 
 /** Replaces {{extra}} keys then SillyTavern macros. */
@@ -146,6 +194,9 @@ export function state() {
 export function saveState() {
     if (!hasChat()) return;
     const c = ctx();
+    // Whoever is using the phone right now is {{user}} for this chat, even after a persona switch.
+    const st = c.chatMetadata?.[META_KEY];
+    if (st && c.name1 && !(st.personaNames ??= []).some(n => sameName(n, c.name1))) st.personaNames.push(c.name1);
     if (typeof c.saveMetadataDebounced === 'function') c.saveMetadataDebounced();
     else c.saveMetadata();
 }
@@ -395,6 +446,8 @@ export function people() {
 export function avatarUrl(name) {
     const c = ctx();
     if (isUser(name)) {
+        const own = persona().avatar;
+        if (own) return own;
         const chat = c.chat ?? [];
         for (let i = chat.length - 1; i >= 0; i--) {
             if (chat[i]?.is_user && chat[i].force_avatar) return chat[i].force_avatar;

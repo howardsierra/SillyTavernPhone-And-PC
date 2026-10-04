@@ -1,7 +1,7 @@
-import { changed, ctx, money, saveSettings, saveState, settings, state } from '../core.js';
+import { changed, ctx, money, persona, saveSettings, saveState, settings, state, userName } from '../core.js';
 import { imageAvailable, imageProviders } from '../images.js';
 import { updateInjection } from '../inject.js';
-import { header, input, sectionLabel } from '../ui/kit.js';
+import { avatar, header, input, sectionLabel } from '../ui/kit.js';
 import { modeCard } from './messages.js';
 import { confirmReset } from '../reset.js';
 import { draft } from '../ui/state.js';
@@ -20,6 +20,20 @@ function choice(key, value, label) {
     return `<button class="stp-seg ${settings()[key] === value ? 'stp-active' : ''}" data-act="set-value" data-key="${key}" data-value="${value}">${label}</button>`;
 }
 
+/** Who the phone belongs to: the SillyTavern persona in use. */
+function accountCard() {
+    const p = persona();
+    return `<div class="stp-card stp-account">
+        ${avatar(userName(), 'lg')}
+        <div class="stp-row-main">
+            <div class="stp-row-title">${esc(p.name)}</div>
+            <div class="stp-row-sub">${p.title ? `${esc(p.title)} · ` : ''}SillyTavern persona${p.description ? '' : ' · no description'}</div>
+            ${p.description ? `<div class="stp-account-desc">${esc(p.description.slice(0, 140))}${p.description.length > 140 ? '…' : ''}</div>` : ''}
+        </div>
+        <span class="stp-account-sync" title="Follows the persona you pick in SillyTavern"><i class="fa-solid fa-arrows-rotate"></i> synced</span>
+    </div>`;
+}
+
 export default {
     id: 'settings',
     label: 'Settings',
@@ -31,6 +45,7 @@ export default {
         const provider = imageProviders().find(p => p.id === s.imageProvider)?.label ?? s.imageProvider;
         return `${header('Settings', { large: true })}
             <div class="stp-scroll" data-scroll="settings">
+                ${accountCard()}
                 ${sectionLabel('Skin')}
                 <div class="stp-skins">${SKINS.map(k => `<button class="stp-skin ${(s.skin || 'classic') === k.id ? 'stp-active' : ''}" data-act="set-value" data-key="skin" data-value="${k.id}">
                     <span class="stp-skin-dots">${k.colors.map(c => `<i style="background:${c}"></i>`).join('')}</span><span>${esc(k.label)}</span>
