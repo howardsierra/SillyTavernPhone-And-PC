@@ -1,5 +1,5 @@
 // Quiet-prompt generation (peeks, catalogs, feeds) with lenient JSON parsing.
-import { changed, isUser, liveItems, nextId, people, promptText, saveState, state, sub } from './core.js';
+import { changed, chatCharacters, isUser, liveItems, nextId, people, promptText, saveState, state, sub, userName } from './core.js';
 import { storyContext } from './context.js';
 import { llm } from './llm.js';
 import { autoImages } from './images.js';
@@ -26,8 +26,9 @@ export function isBusy(key) {
  * @param {string} [opts.busyKey] UI busy marker
  * @param {string} [opts.asCharacter] In group chats, generate as this member
  * @param {boolean} [opts.queue] If the same thing is already generating, wait for it and run after (instead of skipping)
+ * @param {string} [opts.note] An extra instruction added after the story context
  */
-export async function runJson(key, vars = {}, { busyKey = key, asCharacter = null, queue = false } = {}) {
+export async function runJson(key, vars = {}, { busyKey = key, asCharacter = null, queue = false, note = '' } = {}) {
     if (busy.has(busyKey) && !queue) return null;
     while (busy.has(busyKey)) await running.get(busyKey);
     let finish;
@@ -40,7 +41,7 @@ export async function runJson(key, vars = {}, { busyKey = key, asCharacter = nul
         // Card-only for chats without an intro, card + intro, or card + chat history.
         const template = promptText(key);
         const context = storyContext(asCharacter ?? vars.name ?? null);
-        const prompt = sub(template.includes('{{context}}') ? template : `${template}\n\n{{context}}`, { ...vars, context });
+        const prompt = sub(`${template.includes('{{context}}') ? template : `${template}\n\n{{context}}`}${note ? `\n\n${note}` : ''}`, { ...vars, context });
         quietDepth++;
         updateInjection();
         let raw;
@@ -112,9 +113,19 @@ function alreadyThere(list, label) {
     return `These already exist — do NOT repeat them; write OLDER ${label} from before them:\n${list.slice(0, 15).map(x => `- ${String(x).replace(/\s+/g, ' ').slice(0, 110)}`).join('\n')}`;
 }
 
+/** A handle already used by someone else on that app (two people can't share an account). */
+function handleTaken(name, app, handle) {
+    const h = norm(handle).replace(/^@|^u\//, '');
+    if (!h) return false;
+    return Object.entries(state().profiles).some(([who, p]) => !sameName(who, name) && norm(p.handles?.[app]).replace(/^@|^u\//, '') === h);
+}
+
 function setProfile(name, patch) {
     const st = state();
     const prev = st.profiles[name] ?? {};
+    if (patch.handles) {
+        patch = { ...patch, handles: Object.fromEntries(Object.entries(patch.handles).filter(([app, h]) => !handleTaken(name, app, h))) };
+    }
     st.profiles[name] = {
         ...prev,
         handles: { ...(prev.handles ?? {}), ...(patch.handles ?? {}) },
@@ -148,6 +159,16 @@ function ownPosts(name, app) {
     return liveItems().filter(x => x.kind === 'post' && x.app === app && sameName(x.from, name) && !x.stranger);
 }
 
+/** Keeps a peek on the right account: only this person's own posts and handle. */
+function ownAccountNote(name, what = 'account') {
+    const user = userName();
+    const others = chatCharacters().filter(n => !sameName(n, name));
+    if (isUser(name)) {
+        return `[This is ${user}'s OWN ${what}: everything in it is written or done by ${user} — never by ${others.join(', ') || 'anyone else'} or other people, and don't reuse their usernames.]`;
+    }
+    return `[This is ${name}'s OWN ${what}: everything in it is written or done by ${name} — not by ${user}${others.length ? `, ${others.join(', ')}` : ''} or anyone else. ${name}'s username is their own, not ${user}'s.]`;
+}
+
 /**
  * Peek at one app on a character's phone. Fills their whole profile feed;
  * with `more`, appends older posts instead of replacing.
@@ -161,7 +182,7 @@ export async function peekApp(name, app, { more = false } = {}) {
     const data = await runJson('peekSocial', {
         name, appName: meta.name, count: meta.count, shape: meta.shape,
         more: more ? alreadyThere(existing.map(p => p.title || p.text || p.image), 'posts') : '',
-    }, { busyKey: `peek:${app}:${norm(name)}`, asCharacter: name });
+    }, { busyKey: `peek:${app}:${norm(name)}`, asCharacter: name, note: ownAccountNote(name, `${meta.name} profile`) });
     if (!data) return;
     const st = state();
     const oldest = more ? oldestTime(existing) : null;
@@ -189,7 +210,7 @@ async function peekBrowser(name, { more = false } = {}) {
     const visits = items.filter(x => x.kind === 'visit').sort((a, b) => b.time - a.time);
     const data = await runJson('peekBrowser', {
         name, more: more ? alreadyThere([...searches.map(x => x.text), ...visits.map(x => x.title)], 'searches and pages') : '',
-    }, { busyKey: `peek:browser:${norm(name)}`, asCharacter: name });
+    }, { busyKey: `peek:browser:${norm(name)}`, asCharacter: name, note: ownAccountNote(name, 'browser') });
     if (!data) return;
     const st = state();
     const oldest = more ? oldestTime([...searches, ...visits]) : null;
@@ -215,7 +236,7 @@ async function peekMusic(name, { more = false } = {}) {
     const tracks = liveItems().filter(x => x.kind === 'music' && sameName(x.from, name)).sort((a, b) => b.time - a.time);
     const data = await runJson('peekMusic', {
         name, more: more ? alreadyThere(tracks.map(t => `${t.title} — ${t.artist}`), 'songs') : '',
-    }, { busyKey: `peek:music:${norm(name)}`, asCharacter: name });
+    }, { busyKey: `peek:music:${norm(name)}`, asCharacter: name, note: ownAccountNote(name, 'music library') });
     if (!data) return;
     const st = state();
     const oldest = more ? oldestTime(tracks) : null;
@@ -256,11 +277,21 @@ export async function generateFeed(app, { more = false } = {}) {
         const mapped = mapPost(app, e);
         if (!mapped) return;
         const author = str(e.author) || str(e.handle) || 'someone';
-        const match = known.find(n => sameName(n, author) || sameName(n, str(e.author).split(/\s+/)[0]));
+        const handle = norm(e.handle).replace(/^@|^u\//, '');
+        const handleOf = n => norm(st.profiles[n]?.handles?.[app]).replace(/^@|^u\//, '');
+        // Your own handle in the feed is you (skipped: your feed shows your real posts).
+        if (handle && handle === handleOf(userName())) return;
+        // A story person by exact name or by their own handle — never just a shared first name.
+        const match = known.find(n => sameName(n, author) || (handle && handle === handleOf(n)));
         if (match && isUser(match)) return;
+        // Nobody posts under someone else's username.
+        const owner = handle ? Object.keys(st.profiles).find(n => handleOf(n) === handle) : null;
+        const shownHandle = match
+            ? (st.profiles[match]?.handles?.[app] ?? (owner && !sameName(owner, match) ? '' : str(e.handle)))
+            : (owner ? '' : str(e.handle));
         const item = {
             id: nextId(st), time: batchTime(e, i, oldest), ...GEN_BASE, ...mapped,
-            from: match ?? author, owner: `feed:${app}`, feed: app, stranger: !match, handle: str(e.handle),
+            from: match ?? author, owner: `feed:${app}`, feed: app, stranger: !match, handle: shownHandle,
         };
         if (isUser(item.from)) return;
         st.items.push(item);
