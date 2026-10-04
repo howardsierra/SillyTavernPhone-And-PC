@@ -2,7 +2,7 @@
 // shops… Uses SillyTavern's current connection, or a Connection Manager profile
 // picked for the phone (e.g. a faster/cheaper model) with a prompt we build here.
 import { PROMPT_KEY, chatCharacters, ctx, persona as currentPersona, settings, userName } from './core.js';
-import { cardFor } from './context.js';
+import { cardFor, ignoringIntro, introMessages } from './context.js';
 import { sameName } from './util.js';
 
 export function phoneProfiles() {
@@ -20,8 +20,9 @@ function stripReasoning(text) {
 /** Recent chat history as chat-completion messages (the chat is the phone's memory). */
 function history(limit) {
     const chat = ctx().chat ?? [];
+    const intro = ignoringIntro() ? introMessages(chat) : new Set();
     return chat
-        .filter(m => m && !m.is_system && String(m.mes ?? '').trim())
+        .filter(m => m && !m.is_system && !intro.has(m) && String(m.mes ?? '').trim())
         .slice(-Math.max(1, limit))
         .map(m => ({ role: m.is_user ? 'user' : 'assistant', content: `${m.name}: ${m.mes}` }));
 }
@@ -157,7 +158,22 @@ async function withRetries(fn, tries = 3) {
  * @param {string} [opts.asCharacter] In group chats, generate as this member
  * @param {number} [opts.maxTokens]
  */
-async function generate(prompt, { asCharacter = null, maxTokens = null } = {}) {
+// True while a phone request is running through SillyTavern (the interceptor uses it).
+let phoneRequest = false;
+export function isPhoneRequest() {
+    return phoneRequest;
+}
+
+async function generate(prompt, opts = {}) {
+    phoneRequest = true;
+    try {
+        return await generateRaw(prompt, opts);
+    } finally {
+        phoneRequest = false;
+    }
+}
+
+async function generateRaw(prompt, { asCharacter = null, maxTokens = null } = {}) {
     const c = ctx();
     const s = settings();
     const tokens = Number(maxTokens) || Number(s.peekTokens) || 1200;

@@ -78,6 +78,8 @@ export default {
                     ${toggleRow('lockScreen', 'Lock screen', 'Show new notifications on a lock screen when you open the phone')}
                     ${toggleRow('spamTexts', 'Spam & scam texts', 'Now and then a sketchy text arrives from an unknown number')}
                 </div>
+                ${sectionLabel('Story context')}
+                <div class="stp-card stp-list-card">${toggleRow('ignoreIntro', 'Ignore intro messages', 'Leave the greeting out of everything the phone generates')}</div>
                 ${sectionLabel('This chat')}
                 <div class="stp-card stp-list-card">${modeCard()}</div>
                 <div class="stp-card stp-list-card">${toggleRow('focusPhoneOnly', 'Centre the device in phone-only mode', 'Dims the chat behind it')}</div>

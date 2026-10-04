@@ -57,6 +57,7 @@ function html() {
                 </select>`)}
             ${check('hidePhoneInChat', 'Hide phone messages in the chat view (they stay in the chat as context)')}
             ${row('Reply length (tokens)', '<input class="text_pole" type="number" min="100" max="4000" step="50" data-setting="replyTokens">')}
+            ${check('ignoreIntro', 'Ignore intro messages', 'The phone acts as if the greeting / first message isn\'t there: generated content uses the character card and what has happened since, and the intro is left out of phone requests.')}
             ${check('streamPhone', 'Stream phone requests like chat replies', 'Chat Completion APIs only. Helps with "Bad Gateway" and timeouts on providers that drop long requests that aren\'t streamed.')}
             ${row('Connection for the phone', '<select class="text_pole" data-setting="phoneProfile" id="stp-phone-profile"></select>', 'Use a different (e.g. faster or cheaper) model for texts, peeks and feeds. Needs the Connection Manager extension.')}
             ${row('Chat history for that connection', '<input class="text_pole" type="number" min="1" max="200" data-setting="phoneHistory">', 'How many recent chat messages the phone connection sees')}

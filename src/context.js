@@ -2,14 +2,37 @@
 // - "fresh": the chat has no intro message → only the character card, nothing else
 // - "intro": only the intro message so far → the card plus that intro
 // - "story": an ongoing chat → the card plus the chat so far
-import { chatCharacters, ctx, isUser, persona, userName } from './core.js';
+import { chatCharacters, ctx, isUser, persona, settings, userName } from './core.js';
 import { sameName } from './util.js';
 
 const CARD_LIMIT = 2000;
 
+/**
+ * The intro: every character message before {{user}}'s first one (the greeting,
+ * or several in a group chat). Phone traffic doesn't count.
+ * @param {object[]} chat
+ * @returns {Set<object>} the intro messages
+ */
+export function introMessages(chat = ctx().chat ?? []) {
+    const out = new Set();
+    for (const m of chat) {
+        if (!m || m.is_system) continue;
+        if (m.is_user || m.extra?.stp_phone) break;
+        out.add(m);
+    }
+    return out;
+}
+
+/** "Ignore intro messages": the phone acts as if the greeting isn't there. */
+export function ignoringIntro() {
+    return !!settings().ignoreIntro;
+}
+
 /** Which stage the current chat is at. Only the selected swipe of each message counts. */
 export function chatStage() {
-    const chat = ctx().chat ?? [];
+    const all = ctx().chat ?? [];
+    const intro = ignoringIntro() ? introMessages(all) : new Set();
+    const chat = all.filter(m => !intro.has(m));
     const real = chat.filter(m => m && !m.is_system && String(m.mes ?? '').trim());
     if (!real.length) return 'fresh';
     if (!real.some(m => m.is_user) && real.length === 1) return 'intro';
@@ -61,7 +84,7 @@ export function storyContext(focus = null) {
 function storyBase(focus) {
     const stage = chatStage();
     if (stage === 'story') {
-        return '[Story context: use the character card(s) and everything that has happened in the chat so far, especially the most recent events.]';
+        return `[Story context: use the character card(s) and everything that has happened in the chat so far, especially the most recent events.${ignoringIntro() ? ' The chat\'s intro/opening message is NOT part of the story — ignore it and anything only it established.' : ''}]`;
     }
     if (stage === 'intro') {
         return '[Story context: the story is just beginning. The only scene so far is the intro message in the chat. Base everything on the character card(s) and that intro message — nothing else has happened yet.]';

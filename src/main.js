@@ -13,6 +13,8 @@ import { navigate, resetUi, ui } from './ui/state.js';
 import { setOwner } from './apps/theirs.js';
 import { commentsOnMyPost } from './comments.js';
 import { confirmReset } from './reset.js';
+import { ignoringIntro, introMessages } from './context.js';
+import { isPhoneRequest } from './llm.js';
 import { fillDevice, parseDuration, timeSkip } from './apps/time.js';
 import { applyChatHiding, currentContact, isPhoneOnly, setPhoneOnly } from './turn.js';
 import { maybeSpam } from './apps/extras.js';
@@ -70,9 +72,15 @@ function onMessage(mesId, { notify = true, reanchorAfter = true } = {}) {
     changed();
 }
 
-globalThis.stPhoneGenerateInterceptor = async function (_chat, _contextSize, _abort, type) {
+globalThis.stPhoneGenerateInterceptor = async function (chat, _contextSize, _abort, type) {
     try {
         if (!settings().enabled || !hasChat()) return;
+        // Phone requests can leave the intro message out (this prompt only; the chat is untouched).
+        if (type === 'quiet' && isPhoneRequest() && ignoringIntro() && Array.isArray(chat)) {
+            const intro = introMessages(chat);
+            for (let i = chat.length - 1; i >= 0; i--) if (intro.has(chat[i])) chat.splice(i, 1);
+            return;
+        }
         const committed = !type || type === 'normal' ? commitPending() : [];
         // Show "typing…" in the conversation that's waiting for an answer.
         const lastText = [...committed].reverse().find(x => x.kind === 'sms' || x.kind === 'call');
@@ -179,7 +187,7 @@ function registerSlashCommand() {
 
 function exposeApi() {
     const api = {
-        version: '0.9.0',
+        version: '0.9.1',
         registerImageProvider: (id, label, fn) => {
             registerImageProvider(id, label, fn);
             syncSettingsUi();

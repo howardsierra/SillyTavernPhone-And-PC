@@ -206,6 +206,8 @@ Peeks, Locate, store searches, restaurants, dating profiles and Rated feeds adap
 | **Intro message only** | The character card plus the intro message that's actually showing. Other greetings from the card are never used. |
 | **Ongoing chat** | The character card plus everything that's happened so far. |
 
+**Ignore intro messages** (in the phone's Settings → Story context, or Extensions → Phone & PC) makes the phone act as if the greeting isn't there. The greeting is every character message before your first one, so in a group chat that's each member's greeting. Peeks, feeds, replies and time skips then use the character card plus what has happened *since*. The intro is left out of the chat history sent with phone requests, but your chat and normal replies aren't changed.
+
 Custom prompts can place this anywhere with `{{context}}`. If they leave it out, it's added at the end.
 
 ## Credits

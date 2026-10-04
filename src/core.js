@@ -38,6 +38,7 @@ export const defaultSettings = {
     role: 0,
     peekTokens: 1800,
     injectDevice: true,
+    ignoreIntro: false,
     streamPhone: true,
     snoopNoticed: false,
     // money
