@@ -8,6 +8,7 @@ import { deviceContext } from './apps/theirs.js';
 import { velvetContext } from './apps/velvet.js';
 import { commentContext } from './comments.js';
 import { deletedContext } from './deletions.js';
+import { storyFacts } from './guide.js';
 import { isQuietGenerating } from './gen.js';
 import { APP_NAMES } from './parse.js';
 import { sameName } from './util.js';
@@ -117,6 +118,10 @@ export function updateInjection() {
     if (commentLines.length) parts.push(`[Recent comments on social media]\n${commentLines.join('\n')}`);
     const deletedLines = deletedContext();
     if (deletedLines.length) parts.push(`[Deleted posts]\n${deletedLines.join('\n')}`);
+
+    // Facts the user pinned in the phone, if they want the story to know them too.
+    const pinned = storyFacts();
+    if (pinned) parts.push(pinned);
 
     // What's on characters' own phones, once {{user}} has looked.
     parts.push(...deviceContext());

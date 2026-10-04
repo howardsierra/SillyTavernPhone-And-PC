@@ -109,6 +109,13 @@ Open something that lives on the other device (say, a Pocket notification on the
 
 On **their PC** (swap with the avatar pill on the taskbar), Mail, Files and Games show that character's inbox, their documents and downloads, and their game library, hours played included. What you read there goes into the prompt the same way as their phone.
 
+## Steering what gets generated
+
+Tap the ✨ button on the phone's status bar (or the PC's taskbar), the *Steer what gets generated* row in Settings, or type `/phone steer`.
+
+- **Always true in this chat:** pin facts like *"User and Seraphina are in a committed relationship"* or *"It's the middle of winter"*. Everything the device generates follows them: feeds, peeks, text replies, comments, time skips, their phone and PC, "Fill my phone". Pinned facts override anything older in the chat or the cards. Turn on **Tell the story too** to add them to the main chat's prompt as well. Shortcut: `/phone fact <text>`.
+- **Just for the next thing:** a one-off direction, like *"make the feed about last night's party"* or *"she's annoyed with me"*. The next generation follows it, then it's cleared. (Snoop and Fill my phone keep it for all their steps.) The ✨ button glows while one is waiting. Shortcut: `/phone guide <text>`.
+
 ## Time skip
 
 Open the **Time Skip** app (on both the phone and the PC), or type `/phone timeskip 3 days`.

@@ -3,6 +3,7 @@
 // picked for the phone (e.g. a faster/cheaper model) with a prompt we build here.
 import { PROMPT_KEY, chatCharacters, ctx, persona as currentPersona, settings, userName } from './core.js';
 import { cardFor, ignoringIntro, introMessages } from './context.js';
+import { guidanceFor } from './guide.js';
 import { sameName } from './util.js';
 
 export function phoneProfiles() {
@@ -113,8 +114,11 @@ async function waitForChat(maxMs = 180e3) {
 export function llm(prompt, opts = {}) {
     const run = queue.then(async () => {
         await waitForChat();
+        // The user's steering (facts, a one-off direction) goes last, where it weighs most.
+        const steer = guidanceFor();
+        const full = steer ? `${prompt}\n\n${steer}` : prompt;
         try {
-            return await withRetries(() => generate(prompt, opts));
+            return await withRetries(() => generate(full, opts));
         } finally {
             // A short breather between requests, so bursts (Snoop, feeds…) don't trip rate limits.
             await sleep(500);

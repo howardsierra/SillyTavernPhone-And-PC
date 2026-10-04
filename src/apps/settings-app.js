@@ -5,6 +5,7 @@ import { avatar, header, input, sectionLabel } from '../ui/kit.js';
 import { modeCard } from './messages.js';
 import { confirmReset } from '../reset.js';
 import { fillCard } from './time.js';
+import { facts, nextGuide } from '../guide.js';
 import { draft } from '../ui/state.js';
 import { SKINS, WALLPAPERS, wallpaperCss } from '../ui/theme.js';
 import { esc, toMoney } from '../util.js';
@@ -79,6 +80,7 @@ export default {
                     ${toggleRow('spamTexts', 'Spam & scam texts', 'Now and then a sketchy text arrives from an unknown number')}
                 </div>
                 ${sectionLabel('Story context')}
+                <button class="stp-card stp-row stp-steer-row" data-act="guide-open"><span class="stp-app-glyph stp-glyph-sm" style="--glyph:linear-gradient(160deg,#a18cd1,#5b42c8)"><i class="fa-solid fa-wand-magic-sparkles"></i></span><div class="stp-row-main"><div class="stp-row-title">Steer what gets generated</div><div class="stp-row-sub">${facts().length ? `${facts().length} fact${facts().length === 1 ? '' : 's'} pinned` : 'Pin facts like "we\'re dating", or direct the next thing'}${nextGuide() ? ' · a direction is waiting' : ''}</div></div><i class="fa-solid fa-chevron-right stp-muted"></i></button>
                 <div class="stp-card stp-list-card">${toggleRow('ignoreIntro', 'Ignore intro messages', 'Leave the greeting out of everything the phone generates')}</div>
                 ${sectionLabel('This chat')}
                 <div class="stp-card stp-list-card">${modeCard()}</div>

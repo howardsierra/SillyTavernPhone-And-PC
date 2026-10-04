@@ -8,6 +8,7 @@ import { updateInjection } from '../inject.js';
 import { avatar, button, empty, header, iconBtn, peekButton, photo, sectionLabel, shimmerCards, tabs } from '../ui/kit.js';
 import { navigate, ui } from '../ui/state.js';
 import { splitView } from './messages.js';
+import { withGuide } from '../guide.js';
 import { ago, arr, clock, esc, fmt, norm, parseAgo, sameName, str } from '../util.js';
 
 // ---------------------------------------------------------------- ownership
@@ -193,6 +194,7 @@ function done(withImages) {
 async function peekEverything(name) {
     ui.peekAll = name;
     changed();
+    await withGuide(async () => {
     try {
         await peekTexts(name);
         await peekCalls(name);
@@ -203,6 +205,7 @@ async function peekEverything(name) {
         ui.peekAll = null;
         changed();
     }
+    });
 }
 
 // ------------------------------------------------------------------- reading

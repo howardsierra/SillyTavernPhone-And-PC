@@ -17,6 +17,7 @@ import { instagramApp, redditApp, socialActions, xApp } from './social.js';
 import spark from './spark.js';
 import { THEIR_APPS, theirActions } from './theirs.js';
 import { timeApp } from './time.js';
+import { guideActions } from '../guide.js';
 import velvet from './velvet.js';
 
 export const ALL_APPS = [phone, messages, browserApp, musicApp, xApp, instagramApp, redditApp, chord, channels, liveApp, spark, pay, shop, food, newsApp, calendarApp, locateApp, photosApp, notesApp, settingsApp, rated, velvet, mailApp, filesApp, gamesApp, timeApp];
@@ -35,7 +36,7 @@ export const TASKBAR = ['browser', 'mail', 'files', 'messages', 'chord', 'games'
 /** On the PC these are websites: they open as tabs in the browser. */
 export const SITES = ['x', 'reddit', 'instagram', 'news', 'shop', 'live', 'velvet'];
 
-export const EXTRA_ACTIONS = { ...socialActions, ...theirActions };
+export const EXTRA_ACTIONS = { ...socialActions, ...theirActions, ...guideActions };
 
 const byId = list => id => list.find(a => a.id === id);
 

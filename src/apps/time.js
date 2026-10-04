@@ -9,6 +9,7 @@ import { button, header, input, sectionLabel } from '../ui/kit.js';
 import { clearDrafts, draft, ui } from '../ui/state.js';
 import { arr, esc, parseAgo, sameName, str } from '../util.js';
 import { loadGames, loadInbox } from './desktop.js';
+import { withGuide } from '../guide.js';
 
 const H = 3600e3;
 export const SKIPS = [
@@ -203,6 +204,7 @@ export async function fillDevice(kind = settings().mode === 'pc' ? 'pc' : 'phone
     ui.filling = { kind, step: 0, total: steps.length, label: steps[0][0] };
     changed();
     try {
+        await withGuide(async () => {
         for (let i = 0; i < steps.length; i++) {
             ui.filling = { kind, step: i, total: steps.length, label: steps[i][0] };
             changed();
@@ -213,6 +215,7 @@ export async function fillDevice(kind = settings().mode === 'pc' ? 'pc' : 'phone
             }
             saveState();
         }
+        });
         updateInjection();
         toastr.success(`Your ${kind === 'pc' ? 'PC' : 'phone'} is all set up.`, kind === 'pc' ? '🖥️ PC' : '📱 Phone');
     } finally {

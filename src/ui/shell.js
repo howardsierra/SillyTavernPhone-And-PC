@@ -1,6 +1,7 @@
 // The device: frame, home screen / desktop, routing, gestures and global actions.
 import { allActions, appById, DOCK, isSite, otherDeviceApp, siteApps, TASKBAR, userApps, visibleApps } from '../apps/index.js';
 import { owner, ownerOptions, theirLockNotes, theirWidgets } from '../apps/theirs.js';
+import { guideButton, guideSheet } from '../guide.js';
 import { sendText } from '../apps/messages.js';
 import { avatarUrl, balance, changed, findById, hasChat, liveItems, money, onChange, pendingItems, saveSettings, saveState, settings, state, userName } from '../core.js';
 import { orderStepLabel, requestStatus } from '../derived.js';
@@ -329,6 +330,7 @@ function taskbar() {
         }).join('')}</div>
         <div class="stp-task-tray">
             ${ownerOptions().length && hasChat() ? `<button class="stp-task-owner ${who ? 'stp-theirs' : ''}" data-act="owner-menu" title="Swap whose PC this is">${avatar(who ?? userName(), 'xs')}<span>${esc(who ? `${who}'s PC` : 'Your PC')}</span><i class="fa-solid fa-right-left"></i></button>` : ''}
+            ${hasChat() ? guideButton('stp-task-icon stp-guide-btn') : ''}
             <button class="stp-task-icon" data-act="toggle-mode" title="Pick up your phone"><i class="fa-solid fa-mobile-screen-button"></i></button>
             <span class="stp-task-clock"><span class="stp-titlebar-clock">${esc(nowText())}</span><small>${esc(d.toLocaleDateString([], { month: 'short', day: 'numeric' }))}</small></span>
             <button class="stp-task-icon" data-act="close" title="Close"><i class="fa-solid fa-power-off"></i></button>
@@ -425,6 +427,7 @@ export function render() {
                 ${bannerHtml()}
                 ${viewerHtml()}
                 ${ownerSheet()}
+                ${guideSheet()}
             </div>
             ${taskbar()}
         </div>`;
@@ -438,6 +441,7 @@ export function render() {
                     ${owner() && !onHome ? `<button class="stp-status-owner" data-act="owner-menu" title="${esc(owner())}'s phone — tap to swap">${avatar(owner(), 'xs')}</button>` : ''}
                     <span class="stp-island ${ui.banner ? 'stp-island-wide' : ''}"></span>
                     <span class="stp-status-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><span class="stp-battery"><i></i></span>
+                    ${hasChat() ? guideButton('stp-guide-btn stp-status-guide') : ''}
                     <button class="stp-close" data-act="close" title="Close phone" aria-label="Close phone"><i class="fa-solid fa-xmark"></i></button></span>
                 </div>
                 <div class="stp-view ${anim}">${view ?? homeView()}</div>
@@ -445,6 +449,7 @@ export function render() {
                 ${bannerHtml()}
                 ${viewerHtml()}
                 ${ownerSheet()}
+                ${guideSheet()}
                 <div class="stp-homebar" data-act="home" title="Home"></div>
             </div>
         </div>`;

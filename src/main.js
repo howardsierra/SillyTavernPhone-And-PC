@@ -16,6 +16,7 @@ import { confirmReset } from './reset.js';
 import { ignoringIntro, introMessages } from './context.js';
 import { isPhoneRequest } from './llm.js';
 import { fillDevice, parseDuration, timeSkip } from './apps/time.js';
+import { addFact, setNextGuide } from './guide.js';
 import { applyChatHiding, currentContact, isPhoneOnly, setPhoneOnly } from './turn.js';
 import { maybeSpam } from './apps/extras.js';
 import { debounce, norm, sameName } from './util.js';
@@ -147,10 +148,21 @@ function registerSlashCommand() {
     try {
         c.SlashCommandParser.addCommandObject(c.SlashCommand.fromProps({
             name: 'phone',
-            helpString: `Open, close or toggle the in-story phone, jump to an app, or switch this chat to phone-only roleplay (only) and back (story). /phone reset gives this chat a brand-new phone; /phone clear removes generated content only. Usage: /phone [open|close|toggle|pc|phone|only|story|reset|clear|timeskip <how long>|fill|${ALL_APPS.map(a => a.id).join('|')}]`,
+            helpString: `Open, close or toggle the in-story phone, jump to an app, or switch this chat to phone-only roleplay (only) and back (story). /phone reset gives this chat a brand-new phone; /phone clear removes generated content only. Usage: /phone [open|close|toggle|pc|phone|only|story|reset|clear|timeskip <how long>|fill|fact <text>|guide <text>|steer|${ALL_APPS.map(a => a.id).join('|')}]`,
             callback: (_args, value) => {
                 const v = norm(value);
-                if (v.startsWith('timeskip') || v.startsWith('skip')) {
+                const raw = String(value ?? '').trim();
+                if (v.startsWith('fact ')) {
+                    addFact(raw.replace(/^fact\s+/i, ''));
+                    toastr.success('Pinned. Everything the phone generates will follow it.', '✨ Fact');
+                } else if (v.startsWith('guide ') || v.startsWith('steer ')) {
+                    setNextGuide(raw.replace(/^(guide|steer)\s+/i, ''));
+                    toastr.info('The next thing the phone generates will follow it.', '✨ Direction set');
+                } else if (v === 'guide' || v === 'steer') {
+                    open();
+                    ui.guideSheet = true;
+                    changed();
+                } else if (v.startsWith('timeskip') || v.startsWith('skip')) {
                     const ms = parseDuration(v.replace(/^(timeskip|skip)\s*/, '') || '1 day');
                     if (ms) timeSkip(ms, { chatNote: settings().skipChatNote !== false });
                     else toastr.info('Usage: /phone timeskip 3 days', '⏩ Time skip');
@@ -187,7 +199,7 @@ function registerSlashCommand() {
 
 function exposeApi() {
     const api = {
-        version: '0.9.1',
+        version: '0.9.2',
         registerImageProvider: (id, label, fn) => {
             registerImageProvider(id, label, fn);
             syncSettingsUi();
